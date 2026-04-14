@@ -20,82 +20,82 @@ This guide explains the **General Transaction Execution Flow**—the precise se
 
 1. **perform_sc_call_lambda()** 
     
-    ![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+    
     
     `framework/scenario/src/scenario/run_vm/sc_call.rs:25` └─ **tx_input_from_call()** [CONSTRUCT TX INPUT] 
     
-    ![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+    
     
     `sc_call.rs:61` ↓
 2. **commit_call_with_async_and_callback()** 
     
-    ![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+    
     
     `chain/vm/src/host/execution/exec_call.rs:53` ↓
 3. **commit_call()** 
     
-    ![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+    
     
     `chain/vm/src/host/execution/exec_call.rs:25` ├─ **state.subtract_tx_gas()** [PRE-PAY GAS] │ 
     
-    ![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+    
     
     `exec_call.rs:34` └─ **execute_builtin_function_or_default()** (ROUTER) 
     
-    ![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+    
     
     `chain/vm/src/host/execution/exec_general_tx.rs:15` ↓
 4. **execute_default()** 
     
-    ![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+    
     
     `chain/vm/src/host/execution/exec_general_tx.rs:103` ├─ **tx_cache.transfer_egld_balance()** [VALUE TRANSFER] │ 
     
-    ![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+    
     
     `exec_general_tx.rs:113` ├─ **TxContext::new()** [WORKSPACE PREP] │ 
     
-    ![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+    
     
     `exec_general_tx.rs:141` └─ **runtime.execute()** 
     
-    ![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+    
     
     `chain/vm/src/host/runtime.rs:107` ↓
 5. **Runtime::execute() [WASM Handover]** 
     
-    ![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+    
     
     `runtime.rs:107` ├─ **self.set_executor_context()** [HOT-SWAP CONTEXT] │ 
     
-    ![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+    
     
     `runtime.rs:117` ├─ **self.executor.new_instance()** [LOAD WASM] │ 
     
-    ![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+    
     
     `runtime.rs:128` └─ **call_lambda.call()** [CONTRACT LOGIC RUNS] 
     
-    ![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+    
     
     `runtime.rs:133` └─ **VM Hooks Interface** (Storage, Math, Crypto) 
     
-    ![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+    
     
     `chain/vm/src/host/vm_hooks/vh_context.rs:15` ↓
 6. **tx_context.into_results()** 
     
-    ![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+    
     
     `tx_context.rs:184` [EXTRACT (TxResult, BlockchainUpdate)] ↓
 7. **blockchain_updates.apply(state)** 
     
-    ![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+    
     
     `exec_call.rs:41` [WRITE TO STORAGE - BLOCKCHAIN STATE UPDATED] ↓
 8. **Return TxResult** 
     
-    ![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+    
     
     `exec_call.rs:47`
     
@@ -374,39 +374,39 @@ You aren't just saving code to the blockchain; you are running that code once to
 
 **perform_sc_deploy_update_results()** 
 
-![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
 
 `framework/scenario/src/scenario/run_vm/sc_deploy.rs:20` ↓
 
 **perform_sc_deploy_lambda()** 
 
-![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
 
 `sc_deploy.rs:31` ├─ **tx_input_from_deploy()** [PREPARE DEPLOY INPUT] │ 
 
-![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
 
 `sc_deploy.rs:58` └─ **execution::commit_deploy()** 
 
-![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
 
 `chain/vm/src/host/execution/exec_create.rs:9` ↓
 
 **execute_deploy()** (Deployment Controller) 
 
-![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
 
 `exec_create.rs:47` ├─ **tx_cache.get_new_address()** [DETERMINISTIC ADDRESS CALC] │ 
 
-![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
 
 `chain/vm/src/host/context/tx_cache.rs:102` ├─ **TxContext::new()** [CONTEXT PREP] │ 
 
-![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
 
 `exec_create.rs:60` └─ **create_new_contract()** (Sub‑Step: Account Creation) 
 
-![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
 
 `chain/vm/src/host/context/tx_context.rs:153` ├─ **Validation Function** (Check Address Collision) │ 
 
@@ -414,39 +414,39 @@ You aren't just saving code to the blockchain; you are running that code once to
 
 `tx_context.rs:160` └─ **tx_cache.insert_account()** [STORE CODE & METADATA] 
 
-![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
 
 `tx_context.rs:165` [Writes bytecode path to the new contract's AccountData] ↓
 
 **runtime.execute()** (Runtime Controller) 
 
-![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
 
 `chain/vm/src/host/runtime.rs:107` ├─ **self.executor.new_instance()** [WASM INSTANTIATION] │ 
 
-![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
 
 `runtime.rs:128` └─ **call_lambda.call()** [RUN INIT FUNCTION] 
 
-![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
 
 `runtime.rs:133` [Execution of the constructor to set initial storage values] ↓
 
 **tx_context.into_results()** 
 
-![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
 
 `tx_context.rs:184` ↓
 
 **BlockchainUpdate::apply()** [COMMIT TO MAIN STATE] 
 
-![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
 
 `exec_create.rs:37` [The new account and its initialized storage are persisted] ↓
 
 **Return New Address & TxResult** 
 
-![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
 
 `exec_create.rs:43`
 
