@@ -540,3 +540,286 @@ If the `init()` function crashes or fails, the whole deployment is cancelled, 
 The final step merges the new account, its saved code, and the data created during `init()` into the official blockchain record.
 
 - **The Function:** `blockchain_updates.apply(state)` in `exec_create.rs:37`.
+
+## 4. SMART CONTRACT QUERY FLOW
+**Same execution engine, but no commit.**
+
+This flow ensures that you get a mathematically perfect answer without ever risking a change to the blockchain's official record. It is the only way to "look" at the blockchain without actually "touching" it.
+
+Imagine a blockchain as a locked library. A **Transaction** is like going to the desk and asking the librarian to rewrite a page in a book. A **Query**, on the other hand, is simply walking in and reading a book. You get the information you need, but the library stays exactly as it was when you left.
+
+Here is how the blockchain handles a "Read-Only" request.
+### Smart Contract Query Call Stack (Rust VM)
+
+**Smart Contract Query Flow**
+
+**perform_sc_query_update_results()**
+[`framework/scenario/src/scenario/run_vm/sc_query.rs:18`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/framework/scenario/src/scenario/run_vm/sc_query.rs#L18)
+↓
+
+**perform_sc_query_in_debugger()**
+[`sc_query.rs:27`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/framework/scenario/src/scenario/run_vm/sc_query.rs#L27)
+├─ **tx_input_from_query()** [SIMULATE INPUT]
+│  [`sc_query.rs:44`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/framework/scenario/src/scenario/run_vm/sc_query.rs#L44)
+│  [Sets gas to MAX and value to 0 for read‑only access]
+└─ **execution::execute_query()**
+   [`chain/vm/src/host/execution/exec_query.rs:10`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_query.rs#L10)
+↓
+
+**execute_query()** (Query Controller)
+[`exec_query.rs:10`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_query.rs#L10)
+├─ **TxCache::new()** [READ ONLY SNAPSHOT]
+│  [`exec_query.rs:19`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_query.rs#L19)
+├─ **TxContext::new()** [WORKSPACE PREP]
+│  [`exec_query.rs:20`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_query.rs#L20)
+└─ **runtime.execute()**
+   [`chain/vm/src/host/runtime.rs:107`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/runtime.rs#L107)
+↓
+
+**Runtime::execute()** (Execution Engine)
+[`runtime.rs:107`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/runtime.rs#L107)
+├─ **executor.new_instance()** [WASM INSTANTIATION]
+│  [`runtime.rs:128`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/runtime.rs#L128)
+└─ **call_lambda.call()** [RUN CONTRACT VIEW FUNCTION]
+   [`runtime.rs:133`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/runtime.rs#L133)
+   ├─ **VM Hooks (Read)** [FETCH DATA FROM CACHE]
+   │  [`vh_context.rs:76`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/vm_hooks/vh_context.rs#L76)
+   └─ **Contract Returns Value**
+↓
+
+**tx_context.into_results()**
+[`chain/vm/src/host/context/tx_context.rs:184`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/context/tx_context.rs#L184)
+├─ **let (tx_result, _)** [DISCARD PROPOSED CHANGES]
+│  [`exec_query.rs:22`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_query.rs#L22)
+│  [The underscore ensures that blockchain_updates are never applied]
+└─ **Return TxResult**
+   [`exec_query.rs:23`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_query.rs#L23)  
+   │ [Contains only the data returned by the contract, no state changes]
+---
+### Step 1: The Request (**Query Input**)
+
+**Purpose:** Asking a question without paying a fee.
+
+Unlike a transaction, a query doesn't need to be signed by your private key, and it doesn't cost any money. You simply say: "I want to know how many tokens Alice has" or "What is the current price of this item?"
+
+- **Behind the scenes:** The SDK creates a "fake" transaction input. It gives you infinite gas (`u64::MAX`) and sets the cost to zero, so the "reading" can happen without any barriers.
+- **The Code:** `tx_input_from_query` in `framework/scenario/src/scenario/run_vm/sc_query.rs:44`.
+
+---
+
+### Step 2: The Simulation Router (**execute_query**)
+
+**Purpose:** Setting up the "What If" scenario.
+
+The request enters the system. Instead of the "Real Transaction" path, it goes through a specialized logic for queries. This path is designed to be a simulation—a "What If" scenario that never becomes "Law."
+
+- **The Function:** `execution::execute_query` in `chain/vm/src/host/execution/exec_query.rs:10`.
+
+---
+
+### Step 3: The Sandbox (**Create TxContext**)
+
+**Purpose:** Creating a temporary workspace.
+
+We still create a `TxContext`. This is like giving the contract a temporary notebook to do its math. The contract can even _pretend_ to write data to storage while looking for your answer, but it is only writing to a temporary "scratchpad" (the Cache).
+
+- **The Function:** `TxContext::new(...)` in `exec_query.rs:20`.
+
+---
+### Step 4: The Engine (**Runtime.execute**)
+
+**Purpose:** Starting the exact same motor.
+
+**This is the magic part:** The blockchain uses the _identical_ Virtual Machine engine for queries as it does for real money transactions. This ensures that the answer you get from a query is 100% mathematically accurate and perfectly matches what would happen in a real transaction.
+
+- **The Code:**
+```rust
+// exec_query.rs:21
+let tx_context = runtime.execute(tx_context, f);
+```
+---
+### Step 5: The Read Hooks (**VM Hooks**)
+
+**Purpose:** Looking into the official records.
+
+The contract uses **Hooks** to "look" into the blockchain's official record. It pulls out the specific data you asked for, like a balance or a piece of text.
+
+---
+### Step 6: The Answer (**TxResult**)
+
+**Purpose:** Extracting the data for the user.
+
+Once the contract finishes its calculation, it produces a `TxResult`. This contains the "Return Values"—the specific answer to the question you asked at the beginning.
+
+- **The Code:**
+```rust
+// exec_query.rs:22
+let (tx_result, _) = tx_context.into_results();
+```
+---
+### Step 7: The Discard (**No State Update**)
+
+**Purpose:** Keeping the blockchain unchanged.
+
+In a real transaction, we take the "notebook" of changes and merge it into the official records. **In a query, we shred the notebook.** The `_` in the code below represents the changes being completely ignored. Nothing is ever saved to the blockchain.
+
+- **The logic:**
+```rust
+// The underscore (_) means "discard these changes"
+let (tx_result, _) = tx_context.into_results();
+return tx_result;
+```
+---
+## 5. SIMULATION / SCENARIO FLOW
+**This is a LOCAL blockchain replica.**
+
+This flow isn't just for "testing"—it is an **Execution Model Simulation**. It allows developers to see exactly how their code will behave in the real world, with 100% accuracy, without ever needing an internet connection or real money.
+
+Testing a Smart Contract on a real blockchain can be slow and expensive. To solve this, the SDK creates a **Simulation Universe**. This is a 100% accurate, private replica of the MultiversX blockchain that lives entirely inside your computer’s memory. It’s a "Sandbox" where you can play God—creating accounts and running complex transactions in milliseconds.
+
+### Simulation / Scenario Call Stack (Rust VM)
+
+**Simulation / Scenario Flow**
+
+**ScenarioWorld::run()** (Facade Entry)
+[`framework/scenario/src/facade/scenario_world.rs:83`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/framework/scenario/src/facade/scenario_world.rs#L83)
+↓
+
+**DebuggerBackend::run_scenario_file()**
+[`framework/scenario/src/facade/debugger_backend.rs:30`]
+↓
+
+**ScenarioVMRunner::run_step()** (Step Dispatcher)
+[`framework/scenario/src/scenario/run_vm/mod.rs:100`]
+[Parses whether the step is a SetState, CheckState, or Transaction]
+↓
+
+**ScenarioVMRunner::perform_sc_call_update_results()**
+[`framework/scenario/src/scenario/run_vm/sc_call.rs:18`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/framework/scenario/src/scenario/run_vm/sc_call.rs#L18)
+↓
+
+**execution::commit_call_with_async_and_callback()** (Controller)
+[`chain/vm/src/host/execution/exec_call.rs:53`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L53)
+↓
+
+**Detailed Sub‑Step: The "Snap‑Shot" Execution**
+[`chain/vm/src/host/execution/exec_call.rs:36`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L36)
+├─ **TxCache::new()** [CREATE SCRATCHPAD]
+│  [`tx_cache.rs:32`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/context/tx_cache.rs#L32)
+├─ **execute_builtin_function_or_default()**
+│  [Logic runs as audited, modifying ONLY the cache]
+└─ **TxResult Extraction**
+   [`exec_call.rs:37`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L37)
+↓
+
+**The "Commit‑or‑Rollback" Decision**
+[`exec_call.rs:40`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L40)
+├─ **Validation Function** (Check Success Status)
+│  [`exec_call.rs:40`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L40)
+├─ **Computation (Commit)**
+│  [If success, prepare to merge cache changes into global HashMap]
+└─ **blockchain_updates.apply(state)** [THE FINAL MUTATION]
+   [`exec_call.rs:41`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L41)
+   └─ **BlockchainState::commit_updates()**
+      [`chain/vm/src/blockchain/state/blockchain_state.rs:43`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/blockchain/state/blockchain_state.rs#L43)
+      [Native HashMap merge: state.accounts.extend(updates.accounts)]
+↓
+
+**Return Scenarioto Result/Trace**
+[`sc_call.rs:22`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/framework/scenario/src/scenario/run_vm/sc_call.rs#L22)
+[Saves the final response back to the Scenario JSON model]
+
+---
+
+### Step 1: The Presence (**ScenarioWorld**)
+
+**Purpose:** Becoming the "God" of your universe.
+
+You start by creating a `ScenarioWorld`. This is your master control center. In this mode, you can create accounts out of thin air, give yourself a billion tokens, and freeze time.
+
+- **The Code:** `ScenarioWorld::new()` in `framework/scenario/src/facade/scenario_world.rs:49`.
+
+---
+
+### Step 2: The Spreadsheet (**BlockchainMock**)
+
+**Purpose:** Storing the world state in a simple map.
+
+In a real blockchain, data is spread across thousands of hard drives. In the simulator, the entire "State" is stored in a `BlockchainMock`. Think of this as a simple spreadsheet (a `HashMap`) that tracks every address and its current balance.
+
+- **The Code:** `BlockchainState` in `chain/vm/src/blockchain/state/blockchain_state.rs:19`.
+
+---
+
+### Step 3: The Command (**Transaction Input**)
+
+**Purpose:** Sending an order to the simulation.
+
+You tell the simulation to perform an action (like calling a contract). The SDK packages this into a `TxInput`, just like it would for a real network.
+
+---
+
+### Step 4: The Path (**exec_general_tx**)
+
+**Purpose:** Following the standard rules.
+
+Even though this is a simulation, it follows the **exact same rules** as a real blockchain. The request enters the router (`exec_general_tx`) to see if it should take a shortcut (Built-in) or run the full contract logic.
+
+- **The Function:** `execute_builtin_function_or_default` in `exec_general_tx.rs:15`.
+
+---
+
+### Step 5: The Scratchpad (**Create TxContext**)
+
+**Purpose:** Creating a "Save Point."
+
+Before the simulation changes the "official" spreadsheet, it creates a scratchpad (`TxCache`). Every change the contract makes is written here first. This is how we can "Rollback" if the execution fails.
+
+- **The Function:** `TxContext::new(...)` in `exec_general_tx.rs:141`.
+
+---
+
+### Step 6: The Heartbeat (**Runtime.execute**)
+
+**Purpose:** Running the real blockchain engine.
+
+**This is the key:** The simulation uses the _actual_ execution engine that lives on real nodes. It’s not a "fake" or "simplified" version; it is the real contract runner connected to your local spreadsheet instead of a global network.
+
+- **The Code:** `runtime.execute(tx_context, f)` in `exec_general_tx.rs:143`.
+
+---
+
+### Step 7: Reading the Map (**VM Hooks**)
+
+**Purpose:** Looking up data in your private records.
+
+The contract uses **Hooks** to look up data. Because this is a simulation, the Hooks don't look across the internet; they look directly into your `BlockchainMock` spreadsheet.
+
+---
+
+### Step 8: The Conclusion (**TxResult**)
+
+**Purpose:** Reporting the success or failure.
+
+The contract finishes and provides a `TxResult`. It tells you exactly what happened, what logs were made, and how much "simulated gas" was used.
+
+---
+
+### Step 9: Commit or Rollback (**BlockchainUpdate**)
+
+**Purpose:** Deciding if the changes become "Real."
+
+This is the final fork in the road for a simulation:
+
+- **Success:** If the transaction worked, the changes from the "scratchpad" are merged into your "official spreadsheet."
+    
+- **Failure:** If it failed, the scratchpad is shredded. It’s as if the transaction never happened—no money was lost, and no records were changed.
+    
+- **The logic:**
+```rust
+// exec_call.rs:40
+if tx_result.result_status.is_success() {
+    blockchain_updates.apply(state);
+}
+```
+
