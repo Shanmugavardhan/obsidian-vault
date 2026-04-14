@@ -370,6 +370,86 @@ In the world of blockchain, a Smart Contract starts its life as a file on a deve
 
 You aren't just saving code to the blockchain; you are running that code once to "seed" the contract's initial state. A contract cannot exist on the blockchain without being "born" through this initialization flow.
 
+**Smart Contract Deployment Flow**
+
+**perform_sc_deploy_update_results()** 
+
+![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
+`framework/scenario/src/scenario/run_vm/sc_deploy.rs:20` ↓
+
+**perform_sc_deploy_lambda()** 
+
+![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
+`sc_deploy.rs:31` ├─ **tx_input_from_deploy()** [PREPARE DEPLOY INPUT] │ 
+
+![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
+`sc_deploy.rs:58` └─ **execution::commit_deploy()** 
+
+![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
+`chain/vm/src/host/execution/exec_create.rs:9` ↓
+
+**execute_deploy()** (Deployment Controller) 
+
+![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
+`exec_create.rs:47` ├─ **tx_cache.get_new_address()** [DETERMINISTIC ADDRESS CALC] │ 
+
+![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
+`chain/vm/src/host/context/tx_cache.rs:102` ├─ **TxContext::new()** [CONTEXT PREP] │ 
+
+![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
+`exec_create.rs:60` └─ **create_new_contract()** (Sub‑Step: Account Creation) 
+
+![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
+`chain/vm/src/host/context/tx_context.rs:153` ├─ **Validation Function** (Check Address Collision) │ 
+
+![232](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
+`tx_context.rs:160` └─ **tx_cache.insert_account()** [STORE CODE & METADATA] 
+
+![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
+`tx_context.rs:165` [Writes bytecode path to the new contract's AccountData] ↓
+
+**runtime.execute()** (Runtime Controller) 
+
+![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
+`chain/vm/src/host/runtime.rs:107` ├─ **self.executor.new_instance()** [WASM INSTANTIATION] │ 
+
+![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
+`runtime.rs:128` └─ **call_lambda.call()** [RUN INIT FUNCTION] 
+
+![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
+`runtime.rs:133` [Execution of the constructor to set initial storage values] ↓
+
+**tx_context.into_results()** 
+
+![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
+`tx_context.rs:184` ↓
+
+**BlockchainUpdate::apply()** [COMMIT TO MAIN STATE] 
+
+![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
+`exec_create.rs:37` [The new account and its initialized storage are persisted] ↓
+
+**Return New Address & TxResult** 
+
+![](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
+
+`exec_create.rs:43`
+
 ---
 ### Step 1: The Blueprint (**Deployment Input**)
 
