@@ -1,0 +1,1 @@
+- **Periodic Reshuffling**: To prevent a shard from being taken over by a fixed group of malicious actors, a portion of validators (up to 1/3) is reshuffled to different shards every epoch.
