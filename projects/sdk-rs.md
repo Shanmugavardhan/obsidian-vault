@@ -822,4 +822,214 @@ if tx_result.result_status.is_success() {
     blockchain_updates.apply(state);
 }
 ```
+---
+## 6. ASYNC CALL / CALLBACK FLOW
+**Execution is NOT always linear.**
 
+It can branch out to other contracts and return with answers. This allows complex applications to work together as a team across the entire blockchain, rather than being limited to just one program at a time.
+
+Most blockchain actions are like a single straight road. But sometimes, a contract needs help from another contract. It needs to "delegate" a task and wait for the answer before it can finish. This is the **Async Call / Callback Flow**. It’s like sending an assistant to the store while you wait at home to start cooking—you can't finish the meal until they return with the groceries.
+
+### Async Call / Callback Call Stack (Rust VM)
+
+**Async Call / Callback Flow**
+
+**commit_call_with_async_and_callback()** (Orchestrator)
+[`chain/vm/src/host/execution/exec_call.rs:53`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L53)
+↓
+
+**Detailed Sub‑Step: Phase 1 — Original Call (Contract A)**
+[`exec_call.rs:63`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L63)
+├─ **perform_async_call()** [VM HOOK TRIGGERED]
+│  [`vh_tx_context.rs:136`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/vm_hooks/vh_tx_context.rs#L136)
+├─ **Validation Function** (Save Pending Call Data)
+│  [`vh_tx_context.rs:147`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/vm_hooks/vh_tx_context.rs#L147)
+└─ **early_exit_async_call()** [HALT EXECUTION OF A]
+   [`vh_tx_context.rs:148`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/vm_hooks/vh_tx_context.rs#L148)
+   [Contract A stops immediately; control returns to host]
+↓
+
+**commit_async_call_and_callback()** (Recursive Phase)
+[`exec_call.rs:96`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L96)
+↓
+
+**Detailed Sub‑Step: Phase 2 — Async Execution (Contract B)**
+[`exec_call.rs:104`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L104)
+├─ **async_call_tx_input()** [PREPARE INPUT FOR B]
+│  [`exec_call.rs:102`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L102)
+└─ **commit_call()** [EXECUTE B]
+   [Contract B runs its logic and produces result]
+↓
+
+**Detailed Sub‑Step: Phase 3 — Callback (Back to Contract A)**
+[`exec_call.rs:116`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L116)
+├─ **async_callback_tx_input()** [PREPARE CALLBACK INPUT]
+│  [`exec_call.rs:111`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L111)
+│  [Includes success/failure status and data from Contract B]
+└─ **commit_call()** [RUN CALLBACK LOGIC]
+   [Contract A resumes at its callback endpoint to finalize task]
+↓
+
+**Final Consolidator: Result Merging**
+[`exec_call.rs:75`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L75)
+├─ **merge_async_results()** [COMBINE ALL STEPS]
+│  [`exec_call.rs:75`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L75)
+│  [Merges logs/results from A, B, and the Callback into one report]
+└─ **BlockchainUpdate::apply()** [COMMIT ALL CHANGES]
+   [`exec_call.rs:41`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L41)
+↓
+
+**Return Final TxResult**
+[`exec_call.rs:78`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L78)
+
+---
+### Step 1: The First Act (**Contract A executes**)
+
+**Purpose:** Starting the original mission.
+
+Contract A starts its work just like any other contract. It follows its instructions until it hits a line of code that requires another contract's help.
+
+- **The Code:** `commit_call(tx_input, ...)` in `chain/vm/src/host/execution/exec_call.rs:63`.
+
+---
+
+### Step 2: Requesting Help (**Makes async call -> Contract B**)
+
+**Purpose:** Asking a neighbor for assistance.
+
+Contract A reaches the point where it needs Contract B. It uses a special command called an `async_call`.
+
+- **The Function:** `perform_async_call` in `chain/vm/src/host/vm_hooks/vh_tx_context.rs:136`.
+---
+### Step 3: The Interruption (**Pending call recorded**)
+
+**Purpose:** Pausing the first mission safely.
+
+**This is the unique part:** Contract A doesn't "stay awake" while waiting. Instead, it stops entirely. The system writes down exactly what Contract A needs from Contract B and saves it as a "Pending Call."
+
+- **Behind the scenes:** The system throws an "Early Exit" error, which tells the engine: "Stop Contract A right now, we have a pending task."
+- **The Code:**
+```rust
+// vh_tx_context.rs:147
+tx_result.pending_calls.async_call = Some(async_call_data);
+```
+### Step 4: The Second Act (**Contract B executes**)
+
+**Purpose:** Running the helper's code.
+
+Now the blockchain temporarily forgets about Contract A and starts a _brand new_ execution for Contract B. Contract B runs its logic, does its math, and produces its own result.
+
+- **The Function:** `commit_async_call_and_callback` in `exec_call.rs:96`.
+
+---
+
+### Step 5: The Messenger (**Callback scheduled**)
+
+**Purpose:** Preparing the answer for Contract A.
+
+Once Contract B is finished, the system takes its result and creates a new "Callback" request. It’s like the assistant returning from the store and heading back to your house.
+
+- **The Function:** `async_callback_tx_input` in `exec_call.rs:111`.
+---
+### Step 6: The Reunion (**Return to Contract A**)
+
+**Purpose:** Giving the answer to the original contract.
+
+Contract A is "woken up" specifically at its **Callback** function. It receives the results from Contract B (success or failure) and uses that information to finish its original mission.
+
+- **The Code:**
+```rust
+// exec_call.rs:116
+let callback_result = commit_call(callback_input, ...);
+```
+---
+### Step 7: The Master Report (**Final TxResult**)
+
+**Purpose:** Consolidating the whole story.
+
+Because this was a multi-step journey, the system merges all the logs and results from Contract A, Contract B, and the Callback into one single master report.
+
+- **The Logic:**
+```rust
+// exec_call.rs:75
+tx_result = merge_async_results(tx_result, async_result);
+```
+---
+### Step 8: Applying the Changes (**BlockchainUpdate**)
+
+**Purpose:** Making the entire team's work permanent.
+
+Finally, the changes from all steps are applied. If any part of the critical chain failed, the system can ensure that no state is changed, keeping the blockchain consistent.
+
+- **The Logic:** `blockchain_updates.apply(state)` in `exec_call.rs:41`.
+
+
+
+
+# Final Flow
+```mermaid
+graph TD
+    subgraph "1. INPUT LAYER (Standardized TX Input)"
+        RAW[Raw Action: Scenario/API/TX] --> PARSE[Parse to TxInput]
+        PARSE --> DATA[TxInput: From, To, Value, Data/Function, Args, Gas]
+    end
+
+    subgraph "2. ROUTING & PREPARATION (The Switchboard)"
+        DATA --> ROUTER{Execution Router}
+        ROUTER -- "Built-in Name Match" --> BLT[Builtin Implementation]
+        ROUTER -- "Standard SC Call" --> SC[Smart Contract Call]
+        ROUTER -- "Deploy (To: Zero)" --> DEP[Deployment logic]
+        
+        BLT --> CTX[Create TxContext]
+        SC --> CTX
+        DEP --> NEW_ACC[Create New Account & Store Bytecode]
+        NEW_ACC --> CTX
+    end
+
+    subgraph "3. EXECUTION ENGINE (The Engine Room)"
+        CTX --> CACHE[TxCache Snapshot]
+        CACHE --> EXEC_TYPE{Execution Type}
+        
+        EXEC_TYPE -- "Built-in" --> NATIVE[Native Rust Logic: skip WASM]
+        EXEC_TYPE -- "Smart Contract" --> VM[Runtime.execute: WASM VM]
+        
+        VM <--> HOOKS[VM Hooks: Storage, Crypto, Logic]
+        NATIVE <--> CACHE
+        
+        HOOKS -- "Async Call Signal" --> ASYNC[Record Pending Call & Halt]
+    end
+
+    subgraph "4. RESULT COLLECTION (Post-Execution)"
+        VM --> RES_EXT[Extract TxResult & Proposed Updates]
+        NATIVE --> RES_EXT
+        ASYNC --> RES_EXT
+        
+        RES_EXT --> FLOW_FILTER{Flow Mode?}
+    end
+
+    subgraph "5. FINALITY & PERSISTENCE (Commit or Discard)"
+        FLOW_FILTER -- "Query Flow" --> DISCARD[Discard Updates: Read-Only]
+        FLOW_FILTER -- "Transaction Flow" --> SUCCESS{Is Success?}
+        FLOW_FILTER -- "Simulation Flow" --> SIM_COMMIT[Commit to Local HashMap]
+        
+        SUCCESS -- "Yes" --> COMMIT[Apply Updates to BlockchainState]
+        SUCCESS -- "No" --> ROLLBACK[Discard Updates: Revert]
+        
+        COMMIT --> FINAL[Final TxResult & System Event Logs]
+        DISCARD --> FINAL
+        SIM_COMMIT --> FINAL
+        ROLLBACK --> FINAL
+    end
+
+    subgraph "6. MULTI-STEP RECURSION (Async Path)"
+        ASYNC -.-> RECURSE[Recurse Context for Contract B]
+        RECURSE -.-> CALLBACK[Recurse Context for Callback to A]
+        CALLBACK -.-> FINAL
+    end
+
+    style DATA fill:#f9f,stroke:#333,stroke-width:2px
+    style CTX fill:#bbf,stroke:#333,stroke-width:2px
+    style VM fill:#dfd,stroke:#333,stroke-width:2px
+    style COMMIT fill:#fdb,stroke:#333,stroke-width:2px
+    style DISCARD fill:#eee,stroke:#333,stroke-width:2px
+```
