@@ -19,84 +19,48 @@ In a blockchain, nothing happens by accident. Every time you send tokens, buy an
 This guide explains the **General Transaction Execution Flow**—the precise sequence of events that turns your request into a permanent part of history.
 
 1. **perform_sc_call_lambda()** 
-    
-    
-    
+
     `framework/scenario/src/scenario/run_vm/sc_call.rs:25` └─ **tx_input_from_call()** [CONSTRUCT TX INPUT] 
-    
-    
-    
+
     `sc_call.rs:61` ↓
 2. **commit_call_with_async_and_callback()** 
-    
-    
-    
+
     `chain/vm/src/host/execution/exec_call.rs:53` ↓
 3. **commit_call()** 
-    
-    
-    
+
     `chain/vm/src/host/execution/exec_call.rs:25` ├─ **state.subtract_tx_gas()** [PRE-PAY GAS] │ 
-    
-    
-    
+
     `exec_call.rs:34` └─ **execute_builtin_function_or_default()** (ROUTER) 
-    
-    
-    
+
     `chain/vm/src/host/execution/exec_general_tx.rs:15` ↓
 4. **execute_default()** 
-    
-    
-    
+
     `chain/vm/src/host/execution/exec_general_tx.rs:103` ├─ **tx_cache.transfer_egld_balance()** [VALUE TRANSFER] │ 
-    
-    
-    
+
     `exec_general_tx.rs:113` ├─ **TxContext::new()** [WORKSPACE PREP] │ 
-    
-    
-    
+
     `exec_general_tx.rs:141` └─ **runtime.execute()** 
-    
-    
-    
+
     `chain/vm/src/host/runtime.rs:107` ↓
 5. **Runtime::execute() [WASM Handover]** 
-    
-    
-    
+
     `runtime.rs:107` ├─ **self.set_executor_context()** [HOT-SWAP CONTEXT] │ 
-    
-    
-    
+
     `runtime.rs:117` ├─ **self.executor.new_instance()** [LOAD WASM] │ 
-    
-    
-    
+
     `runtime.rs:128` └─ **call_lambda.call()** [CONTRACT LOGIC RUNS] 
-    
-    
-    
+
     `runtime.rs:133` └─ **VM Hooks Interface** (Storage, Math, Crypto) 
-    
-    
-    
+
     `chain/vm/src/host/vm_hooks/vh_context.rs:15` ↓
 6. **tx_context.into_results()** 
-    
-    
-    
+
     `tx_context.rs:184` [EXTRACT (TxResult, BlockchainUpdate)] ↓
 7. **blockchain_updates.apply(state)** 
-    
-    
-    
+
     `exec_call.rs:41` [WRITE TO STORAGE - BLOCKCHAIN STATE UPDATED] ↓
 8. **Return TxResult** 
-    
-    
-    
+
     `exec_call.rs:47`
     
 ### Step 1: The Request (**Transaction Input**)
@@ -224,55 +188,55 @@ Viewed tx_cache_balance_util.rs:1-128
 **ESDTTransfer Call Stack**
 
 **perform_sc_call_lambda()**
-[`framework/scenario/src/scenario/run_vm/sc_call.rs:25`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/framework/scenario/src/scenario/run_vm/sc_call.rs#L25)
+`framework/scenario/src/scenario/run_vm/sc_call.rs:25`
 ↓
 
 **execute_builtin_function_or_default()** (Router)
-[`chain/vm/src/host/execution/exec_general_tx.rs:15`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_general_tx.rs#L15)
+`chain/vm/src/host/execution/exec_general_tx.rs:15`
 ↓
 
 **BuiltinFunctionCall::execute_or_else()** (Detector)
-[`chain/vm/src/builtin_functions/builtin_func_container.rs:85`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/builtin_functions/builtin_func_container.rs#L85)
+`chain/vm/src/builtin_functions/builtin_func_container.rs:85`
 ↓
 
 **ESDTTransfer::execute()** (Built‑in Function)
-[`chain/vm/src/builtin_functions/transfer/esdt_transfer_mock.rs:32`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/builtin_functions/transfer/esdt_transfer_mock.rs#L32)
+`chain/vm/src/builtin_functions/transfer/esdt_transfer_mock.rs:32`
 ├─ **try_parse_input()**
-│  [`esdt_transfer_mock.rs:77`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/builtin_functions/transfer/esdt_transfer_mock.rs#L77)
+│  `esdt_transfer_mock.rs:77`
 ├─ **build_log()** [GATHER DATA FOR RECEIPT]
-│  [`esdt_transfer_mock.rs:55`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/builtin_functions/transfer/esdt_transfer_mock.rs#L55)
+│  `esdt_transfer_mock.rs:55`
 └─ **execute_transfer_builtin_func()**
-   [`chain/vm/src/builtin_functions/transfer/transfer_common.rs:60`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/builtin_functions/transfer/transfer_common.rs#L60)
+   `chain/vm/src/builtin_functions/transfer/transfer_common.rs:60`
 ↓
 
 **TxCache::transfer_esdt_balance()** (Protocol Logic)
-[`chain/vm/src/host/context/tx_cache_balance_util.rs:105`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/context/tx_cache_balance_util.rs#L105)
+`chain/vm/src/host/context/tx_cache_balance_util.rs:105`
 ↓
 
 **Detailed Sub‑Step: SENDER Balance Update**
-[`tx_cache_balance_util.rs:43`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/context/tx_cache_balance_util.rs#L43)
+`tx_cache_balance_util.rs:43`
 ├─ **with_account_mut()** [LOAD SENDER FROM STORAGE]
-│  [`tx_cache.rs:76`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/context/tx_cache.rs#L76)
+│  `tx_cache.rs:76`
 ├─ **Validation Function** (Check Insufficient Funds)
-│  [`tx_cache_balance_util.rs:62`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/context/tx_cache_balance_util.rs#L62)
+│  `tx_cache_balance_util.rs:62`
 ├─ **Computation (Subtract)**
 │  [Subtracts transfer value from sender's ESDT instance balance]
 └─ **Storage Write** (Cache updated)
-   [`tx_cache_balance_util.rs:66`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/context/tx_cache_balance_util.rs#L66)
+   `tx_cache_balance_util.rs:66`
 ↓
 
 **Detailed Sub‑Step: RECEIVER Balance Update**
-[`tx_cache_balance_util.rs:72`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/context/tx_cache_balance_util.rs#L72)
+`tx_cache_balance_util.rs:72`
 ├─ **with_account_mut()** [LOAD RECEIVER FROM STORAGE]
-│  [`tx_cache.rs:76`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/context/tx_cache.rs#L76)
+│  `tx_cache.rs:76`
 ├─ **Computation (Add)**
 │  [Adds transfer value to receiver's ESDT instance balance]
 └─ **Storage Write** (Cache updated)
-   [`tx_cache_balance_util.rs:81`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/context/tx_cache_balance_util.rs#L81)
+   `tx_cache_balance_util.rs:81`
 ↓
 
 **Return TxResult with logs**
-[`transfer_common.rs:90`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/builtin_functions/transfer/transfer_common.rs#L90)
+`transfer_common.rs:90`
 
 ---
 
@@ -362,7 +326,6 @@ Finally, the updates made to the cache are committed. Whether it was a complex c
 
 - **The Function:** `blockchain_updates.apply(state)` in `exec_call.rs:41`.
 
-
 ## 3. SMART CONTRACT DEPLOYMENT FLOW
 In the world of blockchain, a Smart Contract starts its life as a file on a developer's computer. But to make it "live" on the network, it must go through a process called **Deployment**. This isn't just uploading a file; it is the act of creating a new digital identity and running its "setup" instructions for the very first time.
 
@@ -374,79 +337,47 @@ You aren't just saving code to the blockchain; you are running that code once to
 
 **perform_sc_deploy_update_results()** 
 
-
-
 `framework/scenario/src/scenario/run_vm/sc_deploy.rs:20` ↓
 
 **perform_sc_deploy_lambda()** 
 
-
-
 `sc_deploy.rs:31` ├─ **tx_input_from_deploy()** [PREPARE DEPLOY INPUT] │ 
 
-
-
 `sc_deploy.rs:58` └─ **execution::commit_deploy()** 
-
-
 
 `chain/vm/src/host/execution/exec_create.rs:9` ↓
 
 **execute_deploy()** (Deployment Controller) 
 
-
-
 `exec_create.rs:47` ├─ **tx_cache.get_new_address()** [DETERMINISTIC ADDRESS CALC] │ 
-
-
 
 `chain/vm/src/host/context/tx_cache.rs:102` ├─ **TxContext::new()** [CONTEXT PREP] │ 
 
-
-
 `exec_create.rs:60` └─ **create_new_contract()** (Sub‑Step: Account Creation) 
-
-
 
 `chain/vm/src/host/context/tx_context.rs:153` ├─ **Validation Function** (Check Address Collision) │ 
 
-![232](vscode-file://vscode-app/usr/share/antigravity/resources/app/extensions/theme-symbols/src/icons/files/rust.svg)
-
 `tx_context.rs:160` └─ **tx_cache.insert_account()** [STORE CODE & METADATA] 
-
-
 
 `tx_context.rs:165` [Writes bytecode path to the new contract's AccountData] ↓
 
 **runtime.execute()** (Runtime Controller) 
 
-
-
 `chain/vm/src/host/runtime.rs:107` ├─ **self.executor.new_instance()** [WASM INSTANTIATION] │ 
 
-
-
 `runtime.rs:128` └─ **call_lambda.call()** [RUN INIT FUNCTION] 
-
-
 
 `runtime.rs:133` [Execution of the constructor to set initial storage values] ↓
 
 **tx_context.into_results()** 
 
-
-
 `tx_context.rs:184` ↓
 
 **BlockchainUpdate::apply()** [COMMIT TO MAIN STATE] 
 
-
-
 `exec_create.rs:37` [The new account and its initialized storage are persisted] ↓
 
 **Return New Address & TxResult** 
-
-
 
 `exec_create.rs:43`
 
@@ -554,46 +485,46 @@ Here is how the blockchain handles a "Read-Only" request.
 **Smart Contract Query Flow**
 
 **perform_sc_query_update_results()**
-[`framework/scenario/src/scenario/run_vm/sc_query.rs:18`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/framework/scenario/src/scenario/run_vm/sc_query.rs#L18)
+`framework/scenario/src/scenario/run_vm/sc_query.rs:18`
 ↓
 
 **perform_sc_query_in_debugger()**
-[`sc_query.rs:27`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/framework/scenario/src/scenario/run_vm/sc_query.rs#L27)
+`sc_query.rs:27`
 ├─ **tx_input_from_query()** [SIMULATE INPUT]
-│  [`sc_query.rs:44`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/framework/scenario/src/scenario/run_vm/sc_query.rs#L44)
+│  `sc_query.rs:44`
 │  [Sets gas to MAX and value to 0 for read‑only access]
 └─ **execution::execute_query()**
-   [`chain/vm/src/host/execution/exec_query.rs:10`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_query.rs#L10)
+   `chain/vm/src/host/execution/exec_query.rs:10`
 ↓
 
 **execute_query()** (Query Controller)
-[`exec_query.rs:10`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_query.rs#L10)
+`exec_query.rs:10`
 ├─ **TxCache::new()** [READ ONLY SNAPSHOT]
-│  [`exec_query.rs:19`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_query.rs#L19)
+│  `exec_query.rs:19`
 ├─ **TxContext::new()** [WORKSPACE PREP]
-│  [`exec_query.rs:20`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_query.rs#L20)
+│  `exec_query.rs:20`
 └─ **runtime.execute()**
-   [`chain/vm/src/host/runtime.rs:107`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/runtime.rs#L107)
+   `chain/vm/src/host/runtime.rs:107`
 ↓
 
 **Runtime::execute()** (Execution Engine)
-[`runtime.rs:107`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/runtime.rs#L107)
+`runtime.rs:107`
 ├─ **executor.new_instance()** [WASM INSTANTIATION]
-│  [`runtime.rs:128`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/runtime.rs#L128)
+│  `runtime.rs:128`
 └─ **call_lambda.call()** [RUN CONTRACT VIEW FUNCTION]
-   [`runtime.rs:133`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/runtime.rs#L133)
+   `runtime.rs:133`
    ├─ **VM Hooks (Read)** [FETCH DATA FROM CACHE]
-   │  [`vh_context.rs:76`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/vm_hooks/vh_context.rs#L76)
+   │  `vh_context.rs:76`
    └─ **Contract Returns Value**
 ↓
 
 **tx_context.into_results()**
-[`chain/vm/src/host/context/tx_context.rs:184`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/context/tx_context.rs#L184)
+`chain/vm/src/host/context/tx_context.rs:184`
 ├─ **let (tx_result, _)** [DISCARD PROPOSED CHANGES]
-│  [`exec_query.rs:22`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_query.rs#L22)
+│  `exec_query.rs:22`
 │  [The underscore ensures that blockchain_updates are never applied]
 └─ **Return TxResult**
-   [`exec_query.rs:23`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_query.rs#L23)  
+   `exec_query.rs:23`  
    │ [Contains only the data returned by the contract, no state changes]
 ---
 ### Step 1: The Request (**Query Input**)
@@ -682,7 +613,7 @@ Testing a Smart Contract on a real blockchain can be slow and expensive. To solv
 **Simulation / Scenario Flow**
 
 **ScenarioWorld::run()** (Facade Entry)
-[`framework/scenario/src/facade/scenario_world.rs:83`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/framework/scenario/src/facade/scenario_world.rs#L83)
+`framework/scenario/src/facade/scenario_world.rs:83`
 ↓
 
 **DebuggerBackend::run_scenario_file()**
@@ -695,38 +626,38 @@ Testing a Smart Contract on a real blockchain can be slow and expensive. To solv
 ↓
 
 **ScenarioVMRunner::perform_sc_call_update_results()**
-[`framework/scenario/src/scenario/run_vm/sc_call.rs:18`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/framework/scenario/src/scenario/run_vm/sc_call.rs#L18)
+`framework/scenario/src/scenario/run_vm/sc_call.rs:18`
 ↓
 
 **execution::commit_call_with_async_and_callback()** (Controller)
-[`chain/vm/src/host/execution/exec_call.rs:53`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L53)
+`chain/vm/src/host/execution/exec_call.rs:53`
 ↓
 
 **Detailed Sub‑Step: The "Snap‑Shot" Execution**
-[`chain/vm/src/host/execution/exec_call.rs:36`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L36)
+`chain/vm/src/host/execution/exec_call.rs:36`
 ├─ **TxCache::new()** [CREATE SCRATCHPAD]
-│  [`tx_cache.rs:32`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/context/tx_cache.rs#L32)
+│  `tx_cache.rs:32`
 ├─ **execute_builtin_function_or_default()**
 │  [Logic runs as audited, modifying ONLY the cache]
 └─ **TxResult Extraction**
-   [`exec_call.rs:37`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L37)
+   `exec_call.rs:37`
 ↓
 
 **The "Commit‑or‑Rollback" Decision**
-[`exec_call.rs:40`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L40)
+`exec_call.rs:40`
 ├─ **Validation Function** (Check Success Status)
-│  [`exec_call.rs:40`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L40)
+│  `exec_call.rs:40`
 ├─ **Computation (Commit)**
 │  [If success, prepare to merge cache changes into global HashMap]
 └─ **blockchain_updates.apply(state)** [THE FINAL MUTATION]
-   [`exec_call.rs:41`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L41)
+   `exec_call.rs:41`
    └─ **BlockchainState::commit_updates()**
-      [`chain/vm/src/blockchain/state/blockchain_state.rs:43`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/blockchain/state/blockchain_state.rs#L43)
+      `chain/vm/src/blockchain/state/blockchain_state.rs:43`
       [Native HashMap merge: state.accounts.extend(updates.accounts)]
 ↓
 
 **Return Scenarioto Result/Trace**
-[`sc_call.rs:22`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/framework/scenario/src/scenario/run_vm/sc_call.rs#L22)
+`sc_call.rs:22`
 [Saves the final response back to the Scenario JSON model]
 
 ---
@@ -835,52 +766,52 @@ Most blockchain actions are like a single straight road. But sometimes, a contra
 **Async Call / Callback Flow**
 
 **commit_call_with_async_and_callback()** (Orchestrator)
-[`chain/vm/src/host/execution/exec_call.rs:53`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L53)
+`chain/vm/src/host/execution/exec_call.rs:53`
 ↓
 
 **Detailed Sub‑Step: Phase 1 — Original Call (Contract A)**
-[`exec_call.rs:63`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L63)
+`exec_call.rs:63`
 ├─ **perform_async_call()** [VM HOOK TRIGGERED]
-│  [`vh_tx_context.rs:136`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/vm_hooks/vh_tx_context.rs#L136)
+│  `vh_tx_context.rs:136`
 ├─ **Validation Function** (Save Pending Call Data)
-│  [`vh_tx_context.rs:147`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/vm_hooks/vh_tx_context.rs#L147)
+│  `vh_tx_context.rs:147`
 └─ **early_exit_async_call()** [HALT EXECUTION OF A]
-   [`vh_tx_context.rs:148`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/vm_hooks/vh_tx_context.rs#L148)
+   `vh_tx_context.rs:148`
    [Contract A stops immediately; control returns to host]
 ↓
 
 **commit_async_call_and_callback()** (Recursive Phase)
-[`exec_call.rs:96`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L96)
+`exec_call.rs:96`
 ↓
 
 **Detailed Sub‑Step: Phase 2 — Async Execution (Contract B)**
-[`exec_call.rs:104`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L104)
+`exec_call.rs:104`
 ├─ **async_call_tx_input()** [PREPARE INPUT FOR B]
-│  [`exec_call.rs:102`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L102)
+│  `exec_call.rs:102`
 └─ **commit_call()** [EXECUTE B]
    [Contract B runs its logic and produces result]
 ↓
 
 **Detailed Sub‑Step: Phase 3 — Callback (Back to Contract A)**
-[`exec_call.rs:116`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L116)
+`exec_call.rs:116`
 ├─ **async_callback_tx_input()** [PREPARE CALLBACK INPUT]
-│  [`exec_call.rs:111`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L111)
+│  `exec_call.rs:111`
 │  [Includes success/failure status and data from Contract B]
 └─ **commit_call()** [RUN CALLBACK LOGIC]
    [Contract A resumes at its callback endpoint to finalize task]
 ↓
 
 **Final Consolidator: Result Merging**
-[`exec_call.rs:75`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L75)
+`exec_call.rs:75`
 ├─ **merge_async_results()** [COMBINE ALL STEPS]
-│  [`exec_call.rs:75`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L75)
+│  `exec_call.rs:75`
 │  [Merges logs/results from A, B, and the Callback into one report]
 └─ **BlockchainUpdate::apply()** [COMMIT ALL CHANGES]
-   [`exec_call.rs:41`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L41)
+   `exec_call.rs:41`
 ↓
 
 **Return Final TxResult**
-[`exec_call.rs:78`](file:///home/dharitri/Documents/WIP/RWA/WIP/mx-sdk-rs/chain/vm/src/host/execution/exec_call.rs#L78)
+`exec_call.rs:78`
 
 ---
 ### Step 1: The First Act (**Contract A executes**)
@@ -962,9 +893,6 @@ tx_result = merge_async_results(tx_result, async_result);
 Finally, the changes from all steps are applied. If any part of the critical chain failed, the system can ensure that no state is changed, keeping the blockchain consistent.
 
 - **The Logic:** `blockchain_updates.apply(state)` in `exec_call.rs:41`.
-
-
-
 
 # Final Flow
 ```mermaid
