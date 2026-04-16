@@ -23,13 +23,11 @@ This guide explains the **General Transaction Execution Flow**—the precise se
     ↓
 2. **commit_call_with_async_and_callback()**   `chain/vm/src/host/execution/exec_call.rs:53`  ↓
 3. **commit_call()**   `chain/vm/src/host/execution/exec_call.rs:25` 
-	├─ **state.subtract_tx_gas()** [PRE-PAY GAS] 
-	 │ 
-    `exec_call.rs:34` └─ **execute_builtin_function_or_default()** (ROUTER) 
-
-    `chain/vm/src/host/execution/exec_general_tx.rs:15` ↓
+	├─ **state.subtract_tx_gas()** [PRE-PAY GAS] `exec_call.rs:34` 
+	 │
+	└─ **execute_builtin_function_or_default()** (ROUTER) `chain/vm/src/host/execution/exec_general_tx.rs:15` 
+	↓
 4. **execute_default()** 
-
     `chain/vm/src/host/execution/exec_general_tx.rs:103` ├─ **tx_cache.transfer_egld_balance()** [VALUE TRANSFER] │ 
 
     `exec_general_tx.rs:113` ├─ **TxContext::new()** [WORKSPACE PREP] │ 
