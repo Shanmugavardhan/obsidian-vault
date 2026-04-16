@@ -18,18 +18,13 @@ In a blockchain, nothing happens by accident. Every time you send tokens, buy an
 
 This guide explains the **General Transaction Execution Flow**—the precise sequence of events that turns your request into a permanent part of history.
 
-1. **perform_sc_call_lambda()** 
-
-    `framework/scenario/src/scenario/run_vm/sc_call.rs:25` └─ **tx_input_from_call()** [CONSTRUCT TX INPUT] 
-
-    `sc_call.rs:61` ↓
-2. **commit_call_with_async_and_callback()** 
-
-    `chain/vm/src/host/execution/exec_call.rs:53` ↓
-3. **commit_call()** 
-
-    `chain/vm/src/host/execution/exec_call.rs:25` ├─ **state.subtract_tx_gas()** [PRE-PAY GAS] │ 
-
+1. **perform_sc_call_lambda()**     `framework/scenario/src/scenario/run_vm/sc_call.rs:25` 
+    └─ **tx_input_from_call()** [CONSTRUCT TX INPUT]   `sc_call.rs:61` 
+    ↓
+2. **commit_call_with_async_and_callback()**   `chain/vm/src/host/execution/exec_call.rs:53`  ↓
+3. **commit_call()**   `chain/vm/src/host/execution/exec_call.rs:25` 
+	├─ **state.subtract_tx_gas()** [PRE-PAY GAS] 
+	 │ 
     `exec_call.rs:34` └─ **execute_builtin_function_or_default()** (ROUTER) 
 
     `chain/vm/src/host/execution/exec_general_tx.rs:15` ↓

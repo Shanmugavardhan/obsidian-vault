@@ -14,7 +14,7 @@
               "type": "markdown",
               "state": {
                 "file": "projects/sdk-rs.md",
-                "mode": "preview",
+                "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
@@ -207,7 +207,7 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "e2325397d11d531d",
+  "active": "ab7c272fdf96e46b",
   "lastOpenFiles": [
     "projects/sdk-py.md",
     "projects/sdk-rs.md",
