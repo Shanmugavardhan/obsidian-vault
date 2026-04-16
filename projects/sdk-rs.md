@@ -8,6 +8,10 @@ mx-sdk-rs has 6 core execution flows
 5. Simulation / Scenario Execution Flow
 6. Async Call / Callback Execution Flow
 ```
+mx-sdk-rs (Rust): Produces the WASM "Blueprints."
+mxpy / mx-sdk-js (Python/JS): Acts as the "Courier" to send those blueprints to the network in a transaction.
+mx-chain-go (Go): Acts as the "Storage" and "Traffic Controller" on Mainnet.
+mx-chain-vm-go (Go/WASM): Acts as the "Real Engine" that actually executes the WASM logic on Mainnet.
 
 ## 1. GENERAL TRANSACTION EXECUTION FLOW
 
