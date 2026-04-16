@@ -27,22 +27,19 @@ This guide explains the **General Transaction Execution Flow**—the precise se
 	 │
 	└─ **execute_builtin_function_or_default()** (ROUTER) `chain/vm/src/host/execution/exec_general_tx.rs:15` 
 	↓
-4. **execute_default()** 
-    `chain/vm/src/host/execution/exec_general_tx.rs:103` ├─ **tx_cache.transfer_egld_balance()** [VALUE TRANSFER] │ 
-
-    `exec_general_tx.rs:113` ├─ **TxContext::new()** [WORKSPACE PREP] │ 
-
-    `exec_general_tx.rs:141` └─ **runtime.execute()** 
-
-    `chain/vm/src/host/runtime.rs:107` ↓
-5. **Runtime::execute() [WASM Handover]** 
-
-    `runtime.rs:107` ├─ **self.set_executor_context()** [HOT-SWAP CONTEXT] │ 
-
-    `runtime.rs:117` ├─ **self.executor.new_instance()** [LOAD WASM] │ 
-
-    `runtime.rs:128` └─ **call_lambda.call()** [CONTRACT LOGIC RUNS] 
-
+4. **execute_default()** `chain/vm/src/host/execution/exec_general_tx.rs:103`
+	├─ **tx_cache.transfer_egld_balance()** [VALUE TRANSFER] `exec_general_tx.rs:113` 
+	 │
+	├─ **TxContext::new()** [WORKSPACE PREP]  `exec_general_tx.rs:141` 
+	 │
+	└─ **runtime.execute()** `chain/vm/src/host/runtime.rs:107` 
+	↓
+5. **Runtime::execute() [WASM Handover]**  `runtime.rs:107` 
+	├─ **self.set_executor_context()** [HOT-SWAP CONTEXT] `runtime.rs:117` 
+	 │
+	├─ **self.executor.new_instance()** [LOAD WASM] `runtime.rs:128` 
+	 │
+	└─ **call_lambda.call()** [CONTRACT LOGIC RUNS] 
     `runtime.rs:133` └─ **VM Hooks Interface** (Storage, Math, Crypto) 
 
     `chain/vm/src/host/vm_hooks/vh_context.rs:15` ↓
