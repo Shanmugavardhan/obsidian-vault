@@ -1,224 +1,69 @@
 # Rust SDK
 
-### What is 
+### What is `chain/`?
 
-```plaintext
-chain/
-```
-
-?
-
-The 
-
-```plaintext
-chain/
-```
-
- directory contains the **core blockchain infrastructure** for MultiversX smart contracts. It has two main parts:
+The `chain/` directory contains the **core blockchain infrastructure** for MultiversX smart contracts. It has two main parts:
 
 1. **`chain/core/`**
-    
-     - Basic blockchain types and constants
-    
-    - Defines fundamental data structures like 
-        
-        ```plaintext
-        Address
-        ```
-        
-         (32 bytes)
-        
+    - Basic blockchain types and constants
+    - Defines fundamental data structures like `Address` (32 bytes)
     - Contains blockchain specifications (code metadata, token types, ESDT roles)
-        
     - Shared between smart contracts and VM implementations
-        
+
 2. **`chain/vm/`**
-    
-     - A Rust implementation of the MultiversX Virtual Machine
-    
-    - Used for **testing and debugging** smart contracts locally
-        
+    - A Rust implementation of the MultiversX Virtual Machine
+    - Used for **testing and debugging** smart contracts locally
     - Simulates how contracts run on the real blockchain
-        
     - Not the actual production VM, but a development tool
-        
 
-### What is 
+### What is `chain/vm/`?
 
-```plaintext
-chain/vm/
-```
-
-?
-
-Think of 
-
-```plaintext
-chain/vm/
-```
-
- as a **blockchain simulator** that runs on your computer. When you write a smart contract, you need to test it before deploying to the real blockchain. This VM lets you:
+Think of `chain/vm/` as a **blockchain simulator** that runs on your computer. When you write a smart contract, you need to test it before deploying to the real blockchain. This VM lets you:
 
 - Execute your contract code locally
-    
 - Debug issues without spending real tokens
-    
 - Run tests in a controlled environment
-    
 - Simulate blockchain state (accounts, balances, storage)
-    
 
 **Key components:**
-
-- ```plaintext
-    blockchain/
-    ```
-    
-     - Simulates blockchain state (accounts, balances)
-    
-- ```plaintext
-    host/
-    ```
-    
-     - Manages contract execution environment
-    
-- ```plaintext
-    executor_impl/
-    ```
-    
-     - Executes the actual contract code
-    
-- ```plaintext
-    builtin_functions/
-    ```
-    
-     - Implements blockchain built-in operations
-    
-- ```plaintext
-    crypto_functions/
-    ```
-    
-     - Cryptographic operations (hashing, signatures)
-    
+- `blockchain/`: Simulates blockchain state (accounts, balances)
+- `host/`: Manages contract execution environment
+- `executor_impl/`: Executes the actual contract code
+- `builtin_functions/`: Implements blockchain built-in operations
+- `crypto_functions/`: Cryptographic operations (hashing, signatures)
 
 ### What are VM Hooks?
 
-**VM Hooks** are the **bridge between your smart contract and the blockchain**.
+**VM Hooks** are the **bridge between your smart contract and the blockchain**.
 
 Think of them as an API that your contract uses to interact with the blockchain:
 
 **When your contract needs to:**
-
-- Get the caller's address → calls 
-    
-    ```plaintext
-    get_caller()
-    ```
-    
-     hook
-    
-- Read from storage → calls 
-    
-    ```plaintext
-    storage_load()
-    ```
-    
-     hook
-    
-- Send tokens → calls 
-    
-    ```plaintext
-    transfer_value()
-    ```
-    
-     hook
-    
-- Get block timestamp → calls 
-    
-    ```plaintext
-    get_block_timestamp()
-    ```
-    
-     hook
-    
-- Write logs → calls 
-    
-    ```plaintext
-    write_event_log()
-    ```
-    
-     hook
-    
+- Get the caller's address → calls `get_caller()` hook
+- Read from storage → calls `storage_load()` hook
+- Send tokens → calls `transfer_value()` hook
+- Get block timestamp → calls `get_block_timestamp()` hook
+- Write logs → calls `write_event_log()` hook
 
 **How it works:**
-
 1. Your contract code (compiled to WebAssembly) runs in isolation
-    
 2. When it needs blockchain data, it calls a VM Hook function
-    
-3. The VM Hook handler (
-    
-    ```plaintext
-    VMHooksHandler
-    ```
-    
-    ) processes the request
-    
-4. The dispatcher (
-    
-    ```plaintext
-    VMHooksDispatcher
-    ```
-    
-    ) routes it to the right implementation
-    
+3. The VM Hook handler (`VMHooksHandler`) processes the request
+4. The dispatcher (`VMHooksDispatcher`) routes it to the right implementation
 5. The result is returned to your contract
-    
 
 **Example hooks:**
+- `get_sc_address()`: Get current contract address
+- `get_owner_address()`: Get contract owner
+- `storage_store()` / `storage_load()`: Read/write storage
+- `managed_caller()`: Get who called the contract
+- `big_int_add()`: Perform big integer math
+- `managed_async_call()`: Call another contract
 
-- ```plaintext
-    get_sc_address()
-    ```
-    
-     - Get current contract address
-    
-- ```plaintext
-    get_owner_address()
-    ```
-    
-     - Get contract owner
-    
-- ```plaintext
-    storage_store()
-    ```
-    
-     / 
-    
-    ```plaintext
-    storage_load()
-    ```
-    
-     - Read/write storage
-    
-- ```plaintext
-    managed_caller()
-    ```
-    
-     - Get who called the contract
-    
-- ```plaintext
-    big_int_add()
-    ```
-    
-     - Perform big integer math
-    
-- ```plaintext
-    managed_async_call()
-    ```
-    
-     - Call another contract
-mx-sdk-rs has 6 core execution flows
+---
+
+### Core Execution Flows
+`mx-sdk-rs` has 6 core execution flows:
 ```
 1. General Transaction Execution Flow (SC execution)
 2. Built-in Function Execution Flow (protocol operations)
@@ -227,62 +72,76 @@ mx-sdk-rs has 6 core execution flows
 5. Simulation / Scenario Execution Flow
 6. Async Call / Callback Execution Flow
 ```
-mx-sdk-rs (Rust): Produces the WASM "Blueprints."
-mxpy / mx-sdk-js (Python/JS): Acts as the "Courier" to send those blueprints to the network in a transaction.
-mx-chain-go (Go): Acts as the "Storage" and "Traffic Controller" on Mainnet.
-mx-chain-vm-go (Go/WASM): Acts as the "Real Engine" that actually executes the WASM logic on Mainnet.
+
+**Roles in the ecosystem:**
+- **mx-sdk-rs (Rust):** Produces the WASM "Blueprints."
+- **mxpy / mx-sdk-js (Python/JS):** Acts as the "Courier" to send those blueprints to the network in a transaction.
+- **mx-chain-go (Go):** Acts as the "Storage" and "Traffic Controller" on Mainnet.
+- **mx-chain-vm-go (Go/WASM):** Acts as the "Real Engine" that actually executes the WASM logic on Mainnet.
+
+---
 
 ## 1. GENERAL TRANSACTION EXECUTION FLOW
 
-The **General Transaction Execution Flow** is the **State Transition Function** of the blockchain.
-It is the **only path** through which the blockchain's official record (who owns what) can be mutated. Every other feature in the SDK—from wallets to explorers—is simply a variation or a tool built to support this one, core flow.
+The **General Transaction Execution Flow** is the **State Transition Function** of the blockchain.
+It is the **only path** through which the blockchain's official record (who owns what) can be mutated. Every other feature in the SDK—from wallets to explorers—is simply a variation or a tool built to support this one, core flow.
+
 ### The Heart of the Blockchain
-In a blockchain, nothing happens by accident. Every time you send tokens, buy an NFT, or interact with an app, you are triggering a **Transaction**. But a transaction isn't just a message; it is a request for the blockchain to change its "state" (its official record of who owns what).
+In a blockchain, nothing happens by accident. Every time you send tokens, buy an NFT, or interact with an app, you are triggering a **Transaction**. But a transaction isn't just a message; it is a request for the blockchain to change its "state" (its official record of who owns what).
 
-This guide explains the **General Transaction Execution Flow**—the precise sequence of events that turns your request into a permanent part of history.
+This guide explains the **General Transaction Execution Flow**—the precise sequence of events that turns your request into a permanent part of history.
 
-1. **perform_sc_call_lambda()**     `framework/scenario/src/scenario/run_vm/sc_call.rs:25` 
-    └─ **tx_input_from_call()** [CONSTRUCT TX INPUT]   `sc_call.rs:61` 
-    ↓
-2. **commit_call_with_async_and_callback()**   `chain/vm/src/host/execution/exec_call.rs:53`  ↓
-3. **commit_call()**   `chain/vm/src/host/execution/exec_call.rs:25` 
-	├─ **state.subtract_tx_gas()** [PRE-PAY GAS] `exec_call.rs:34` 
-	 │
-	└─ **execute_builtin_function_or_default()** (ROUTER) `chain/vm/src/host/execution/exec_general_tx.rs:15` 
-	↓
-4. **execute_default()** `chain/vm/src/host/execution/exec_general_tx.rs:103`
-	├─ **tx_cache.transfer_egld_balance()** [VALUE TRANSFER] `exec_general_tx.rs:113` 
-	 │
-	├─ **TxContext::new()** [WORKSPACE PREP]  `exec_general_tx.rs:141` 
-	 │
-	└─ **runtime.execute()** `chain/vm/src/host/runtime.rs:107` 
-	↓
-5. **Runtime::execute() [WASM Handover]**  `runtime.rs:107` 
-	├─ **self.set_executor_context()** [HOT-SWAP CONTEXT] `runtime.rs:117` 
-	 │
-	├─ **self.executor.new_instance()** [LOAD WASM] `runtime.rs:128` 
-	 │
-	└─ **call_lambda.call()** [CONTRACT LOGIC RUNS] 
-    `runtime.rs:133` └─ **VM Hooks Interface** (Storage, Math, Crypto) 
+#### Execution Call Stack
+1. **perform_sc_call_lambda()**
+   `framework/scenario/src/scenario/run_vm/sc_call.rs:25`
+   └─ **tx_input_from_call()** [CONSTRUCT TX INPUT]
+      `sc_call.rs:61`
+   ↓
+2. **commit_call_with_async_and_callback()**
+   `chain/vm/src/host/execution/exec_call.rs:53`
+   ↓
+3. **commit_call()**
+   `chain/vm/src/host/execution/exec_call.rs:25`
+   ├─ **state.subtract_tx_gas()** [PRE-PAY GAS]
+   │  `exec_call.rs:34`
+   └─ **execute_builtin_function_or_default()** (ROUTER)
+      `chain/vm/src/host/execution/exec_general_tx.rs:15`
+   ↓
+4. **execute_default()**
+   `chain/vm/src/host/execution/exec_general_tx.rs:103`
+   ├─ **tx_cache.transfer_egld_balance()** [VALUE TRANSFER]
+   │  `exec_general_tx.rs:113`
+   ├─ **TxContext::new()** [WORKSPACE PREP]
+   │  `exec_general_tx.rs:141`
+   └─ **runtime.execute()**
+      `chain/vm/src/host/runtime.rs:107`
+   ↓
+5. **Runtime::execute() [WASM Handover]**
+   `runtime.rs:107`
+   ├─ **self.set_executor_context()** [HOT-SWAP CONTEXT]
+   │  `runtime.rs:117`
+   ├─ **self.executor.new_instance()** [LOAD WASM]
+   │  `runtime.rs:128`
+   └─ **call_lambda.call()** [CONTRACT LOGIC RUNS]
+      `runtime.rs:133`
+      └─ **VM Hooks Interface** (Storage, Math, Crypto)
+         `chain/vm/src/host/vm_hooks/vh_context.rs:15`
+   ↓
+6. **tx_context.into_results()**
+   `tx_context.rs:184` [EXTRACT (TxResult, BlockchainUpdate)]
+   ↓
+7. **blockchain_updates.apply(state)**
+   `exec_call.rs:41` [WRITE TO STORAGE - BLOCKCHAIN STATE UPDATED]
+   ↓
+8. **Return TxResult**
+   `exec_call.rs:47`
 
-    `chain/vm/src/host/vm_hooks/vh_context.rs:15` ↓
-6. **tx_context.into_results()** 
-
-    `tx_context.rs:184` [EXTRACT (TxResult, BlockchainUpdate)] ↓
-7. **blockchain_updates.apply(state)** 
-
-    `exec_call.rs:41` [WRITE TO STORAGE - BLOCKCHAIN STATE UPDATED] ↓
-8. **Return TxResult** 
-
-    `exec_call.rs:47`
-    
-### Step 1: The Request (**Transaction Input**)
-
-**Purpose:** Defining what you want to do.
+### Step 1: The Request (Transaction Input)
+**Purpose:** Defining what you want to do.
 
 Think of this as filling out a digital form. You aren't just saying "do something," you are providing specifics: who is sending the request, which contract you want to talk to, how much money you're attaching, and which specific "function" (recipe) you want to run.
 
-- **Behind the scenes:** The SDK gathers your intent into a structured object called `TxInput`. You can find this definition in `chain/vm/src/host/context/tx_input.rs`.
+- **Behind the scenes:** The SDK gathers your intent into a structured object called `TxInput`. You can find this definition in `chain/vm/src/host/context/tx_input.rs`.
 - **The Code:**
 ```rust
 // A simplified look at what the SDK prepares
@@ -295,49 +154,45 @@ pub struct TxInput {
 }
 ```
 
-### Step 2: The Post Office (**Execution Router**)
+### Step 2: The Post Office (Execution Router)
+**Purpose:** Directing your request to the right department.
 
-**Purpose:** Directing your request to the right department.
+Once your "form" (`TxInput`) is ready, it enters the **Execution Router**. The router's job is to look at the destination address and decide who should handle it. Is this a common, simple task that the blockchain already knows how to do (like a simple transfer)? Or is it a custom program written by a developer?
 
-Once your "form" (`TxInput`) is ready, it enters the **Execution Router**. The router's job is to look at the destination address and decide who should handle it. Is this a common, simple task that the blockchain already knows how to do (like a simple transfer)? Or is it a custom program written by a developer?
-
-- **Behind the scenes:** It uses a "router" file to branch the logic.
-- **The Function:** `execute_builtin_function_or_default` in `chain/vm/src/host/execution/exec_general_tx.rs:15`.
+- **Behind the scenes:** It uses a "router" file to branch the logic.
+- **The Function:** `execute_builtin_function_or_default` in `chain/vm/src/host/execution/exec_general_tx.rs:15`.
 
 ---
 
-### Step 3: The Big Decision (**Builtin OR Contract?**)
-
-**Purpose:** Choosing the right tool for the job.
+### Step 3: The Big Decision (Builtin OR Contract?)
+**Purpose:** Choosing the right tool for the job.
 
 If you are performing a standard action (like moving an ESDT token), the blockchain uses a "Builtin" function—a pre-optimized shortcut. If you are calling a custom Smart Contract, it needs to prepare a "Virtual Machine" to run that specific code.
 
-- **Behind the scenes:** The router checks if the function name matches a known "Builtin" shortcut.
+- **Behind the scenes:** The router checks if the function name matches a known "Builtin" shortcut.
 - **The Code:**
 ```rust
 // exec_general_tx.rs:27
 runtime.vm_ref.builtin_functions.execute_builtin_function_or_else(...)
 ```
 
-### Step 4: Setting the Stage (**Create TxContext**)
+### Step 4: Setting the Stage (Create TxContext)
+**Purpose:** Gathering all the tools and workspace needed.
 
-**Purpose:** Gathering all the tools and workspace needed.
+Before a program can run, it needs a workspace. We create a `TxContext`. This is like a "sandbox" that contains:
 
-Before a program can run, it needs a workspace. We create a `TxContext`. This is like a "sandbox" that contains:
+1. **TxCache:** A temporary copy of the blockchain accounts so the program can "check" balances without slowing down the real network.
+2. **Managed Types:** Special high-speed memory for the program to use.
+3. **Result Collector:** A blank notebook where the program will write down everything that happened.
 
-1. **TxCache:** A temporary copy of the blockchain accounts so the program can "check" balances without slowing down the real network.
-2. **Managed Types:** Special high-speed memory for the program to use.
-3. **Result Collector:** A blank notebook where the program will write down everything that happened.
-
-- **The Function:** `TxContext::new(runtime, tx_input, tx_cache)` in `exec_general_tx.rs:141`.
+- **The Function:** `TxContext::new(runtime, tx_input, tx_cache)` in `exec_general_tx.rs:141`.
 
 ---
 
-### Step 5: Starting the Motor (**Runtime.execute**)
+### Step 5: Starting the Motor (Runtime.execute)
+**Purpose:** Handing the request to the Virtual Machine (VM).
 
-**Purpose:** Handing the request to the Virtual Machine (VM).
-
-Now the "Engine" starts. The `runtime.execute` function hands the `TxContext` and the actual contract code (WASM) to the Virtual Machine. The VM is a safe, isolated environment where the code can run without being able to crash the rest of the blockchain.
+Now the "Engine" starts. The `runtime.execute` function hands the `TxContext` and the actual contract code (WASM) to the Virtual Machine. The VM is a safe, isolated environment where the code can run without being able to crash the rest of the blockchain.
 
 - **The Code:**
 ```rust
@@ -345,56 +200,54 @@ Now the "Engine" starts. The `runtime.execute` function hands the `TxContext`
 let tx_context = runtime.execute(tx_context, f);
 ```
 
-### Step 6: The Connection Windows (**VM Hooks**)
+### Step 6: The Connection Windows (VM Hooks)
+**Purpose:** Letting the program "talk" to the blockchain.
 
-**Purpose:** Letting the program "talk" to the blockchain.
+A smart contract is like a prisoner in a room—it can't see the outside world. **VM Hooks** are special "windows" in that room. If the contract needs to know how much money a user has, it calls a Hook. If it wants to save data, it calls a Hook.
 
-A smart contract is like a prisoner in a room—it can't see the outside world. **VM Hooks** are special "windows" in that room. If the contract needs to know how much money a user has, it calls a Hook. If it wants to save data, it calls a Hook.
+- **Behind the scenes:** These hooks (storage, crypto, math) are defined in `chain/vm/src/host/vm_hooks/vh_context.rs`.
+- **Plain English:** The contract says, "Hook, tell me the current block number," and the hook provides the answer safely.
 
-- **Behind the scenes:** These hooks (storage, crypto, math) are defined in `chain/vm/src/host/vm_hooks/vh_context.rs`.
-- **Plain English:** The contract says, "Hook, tell me the current block number," and the hook provides the answer safely.
+---
+
+### Step 7: The Logic Runs (Contract Execution)
+**Purpose:** Running the actual instructions.
+
+This is where the actual "math" happens. The contract code executes its logic: "If User A has 10 tokens, give them an NFT and subtract 10 tokens." It doesn't change the real blockchain yet; it just calculates what _should_ happen.
 
 ---
 
-### Step 7: The Logic Runs (**Contract Execution**)
+### Step 8: The Receipt (TxResult)
+**Purpose:** Summarizing the outcome.
 
-**Purpose:** Running the actual instructions.
-
-This is where the actual "math" happens. The contract code executes its logic: "If User A has 10 tokens, give them an NFT and subtract 10 tokens." It doesn't change the real blockchain yet; it just calculates what _should_ happen.
-
----
-### Step 8: The Receipt (**TxResult**)
-
-**Purpose:** Summarizing the outcome.
-
-When the program finishes, it produces a `TxResult`. This is the final report. It says: "Success! I generated 2 logs, returned the value '5', and used this much gas."
+When the program finishes, it produces a `TxResult`. This is the final report. It says: "Success! I generated 2 logs, returned the value '5', and used this much gas."
 
 - **The Code:**
 ```rust
 // exec_general_tx.rs:145
 tx_context.into_results()
 ```
+
 ---
-### Step 9: Writing into Stone (**BlockchainUpdate**)
 
-**Purpose:** Making the changes permanent.
+### Step 9: Writing into Stone (BlockchainUpdate)
+**Purpose:** Making the changes permanent.
 
-Up until this final second, nothing has actually changed on the official record. The `BlockchainUpdate` contains all the _proposed_ changes. In the final step, the system takes those changes and "applies" them to the real blockchain state.
+Up until this final second, nothing has actually changed on the official record. The `BlockchainUpdate` contains all the _proposed_ changes. In the final step, the system takes those changes and "applies" them to the real blockchain state.
 
-- **The Function:** `blockchain_updates.apply(state)` in `exec_call.rs:41`.
+- **The Function:** `blockchain_updates.apply(state)` in `exec_call.rs:41`.
+
+---
 
 ## 2. BUILT-IN FUNCTION EXECUTION FLOW
+
 **No WASM execution happens here.**
 
-Built-in functions are **Protocol Logic**, not **Contract Logic**. They represent the hardcoded rules of the blockchain that exist for performance and security. This is the "Express Lane" that powers 90% of simple asset transfers on the network.
+Built-in functions are **Protocol Logic**, not **Contract Logic**. They represent the hardcoded rules of the blockchain that exist for performance and security. This is the "Express Lane" that powers 90% of simple asset transfers on the network.
 
-In our journey through the blockchain SDK, we previously saw how Smart Contracts run like custom apps on a computer. But some tasks are so essential—like moving money or changing an owner—that the blockchain team built them directly into the "operating system" itself. These are **Built-in Functions**.
+In our journey through the blockchain SDK, we previously saw how Smart Contracts run like custom apps on a computer. But some tasks are so essential—like moving money or changing an owner—that the blockchain team built them directly into the "operating system" itself. These are **Built-in Functions**.
 
-Think of them as the **Express Lane** of the blockchain: they skip the heavy "Virtual Machine" and run at the speed of the protocol.
-
-Viewed tx_cache.rs:1-141
-Ran command: `grep -r "fn transfer_esdt_balance" .`
-Viewed tx_cache_balance_util.rs:1-128
+Think of them as the **Express Lane** of the blockchain: they skip the heavy "Virtual Machine" and run at the speed of the protocol.
 
 ### Built-in Function Execution Call Stack (ESDTTransfer)
 
@@ -453,66 +306,60 @@ Viewed tx_cache_balance_util.rs:1-128
 
 ---
 
-### Step 1: The Request (**Transaction Input**)
+### Step 1: The Request (Transaction Input)
+**Purpose:** Handing your ticket to the system.
 
-**Purpose:** Handing your ticket to the system.
+Just like any other action, we start with a `TxInput`. This object holds your intent, but instead of calling a complex custom function, you use a "magic word" that the protocol recognizes, like `ESDTTransfer` or `ChangeOwner`.
 
-Just like any other action, we start with a `TxInput`. This object holds your intent, but instead of calling a complex custom function, you use a "magic word" that the protocol recognizes, like `ESDTTransfer` or `ChangeOwner`.
-
-- **The Code:** `TxInput` in `chain/vm/src/host/context/tx_input.rs`.
+- **The Code:** `TxInput` in `chain/vm/src/host/context/tx_input.rs`.
 
 ---
 
-### Step 2: The Router (**exec_general_tx**)
-
-**Purpose:** Deciding between the "Express Lane" or the "Local Lane."
+### Step 2: The Router (exec_general_tx)
+**Purpose:** Deciding between the "Express Lane" or the "Local Lane."
 
 The request hits the router (`execute_builtin_function_or_default`). Its primary job is to look at your request and ask: "Is this one of our native shortcuts?"
 
-- **The Function:** `execute_builtin_function_or_default` in `chain/vm/src/host/execution/exec_general_tx.rs:15`.
+- **The Function:** `execute_builtin_function_or_default` in `chain/vm/src/host/execution/exec_general_tx.rs:15`.
 
 ---
 
-### Step 3: The Detector (**Check: Builtin OR Contract?**)
+### Step 3: The Detector (Check: Builtin OR Contract?)
+**Purpose:** Identifying the shortcut.
 
-**Purpose:** Identifying the shortcut.
+The system looks up your function name in a Catalog. If it sees a name it knows (like `ChangeOwner`), it diverts the request away from the Smart Contract engine.
 
-The system looks up your function name in a Catalog. If it sees a name it knows (like `ChangeOwner`), it diverts the request away from the Smart Contract engine.
-
-- **Behind the scenes:** The "Detector" uses a simple `match` statement to compare your function name against a list of protocol-defined constants.
+- **Behind the scenes:** The "Detector" uses a simple `match` statement to compare your function name against a list of protocol-defined constants.
 - **The Code:**
 ```rust
 // builtin_func_container.rs:119
 CHANGE_OWNER_BUILTIN_FUNC_NAME => self.execute_bf(ChangeOwner, f),
 ```
 
-### Step 4: The Workspace (**Create TxContext**)
+### Step 4: The Workspace (Create TxContext)
+**Purpose:** Preparing the playground, even for shortcuts.
 
-**Purpose:** Preparing the playground, even for shortcuts.
+Even though we are skipping the complex stuff, we still need a `TxContext`. This holds the `TxCache` (the mirror of the blockchain) so we can modify it safely.
 
-Even though we are skipping the complex stuff, we still need a `TxContext`. This holds the `TxCache` (the mirror of the blockchain) so we can modify it safely.
-
-- **The Function:** `TxContext::new(...)` in `exec_general_tx.rs:141`.
+- **The Function:** `TxContext::new(...)` in `exec_general_tx.rs:141`.
 
 ---
 
-### Step 5: Skipping the Engine (**Bypassing Runtime.execute**)
+### Step 5: Skipping the Engine (Bypassing Runtime.execute)
+**Purpose:** Efficiency by omission.
 
-**Purpose:** Efficiency by omission.
-
-Here is where the Built-in flow differs drastically from Smart Contracts. **Neither `runtime.execute()` nor the WASM Virtual Machine are ever started.**
+Here is where the Built-in flow differs drastically from Smart Contracts. **Neither `runtime.execute()` nor the WASM Virtual Machine are ever started.**
 
 Instead of loading a "box" (Virtual Machine) to run your code, the system just runs a plain Rust function. This is why it's so much faster and cheaper.
 
-- **Plain English:** While a Smart Contract has to "start a computer" to run its math, a Built-in function just "does the math" immediately.
+- **Plain English:** While a Smart Contract has to "start a computer" to run its math, a Built-in function just "does the math" immediately.
 
 ---
 
-### Step 6: Native Logic (**Replacing Contract Execution**)
+### Step 6: Native Logic (Replacing Contract Execution)
+**Purpose:** Executing the protocol's own rules.
 
-**Purpose:** Executing the protocol's own rules.
-
-The "logic" here isn't written in a contract; it is written in the SDK itself. For example, the `ChangeOwner` builtin simply updates a field in the account data.
+The "logic" here isn't written in a contract; it is written in the SDK itself. For example, the `ChangeOwner` builtin simply updates a field in the account data.
 
 - **The Code:**
 ```rust
@@ -521,26 +368,28 @@ tx_cache.with_account_mut(&tx_input.to, |account| {
     account.contract_owner = Some(new_owner_address);
 });
 ```
-### Step 7: The Receipt (**TxResult**)
 
-**Purpose:** Summarizing the success.
+### Step 7: The Receipt (TxResult)
+**Purpose:** Summarizing the success.
 
-Once the native logic finishes, it creates a `TxResult`. It looks the same as a Smart Contract result, so the rest of the blockchain doesn't have to worry about how it was made.
+Once the native logic finishes, it creates a `TxResult`. It looks the same as a Smart Contract result, so the rest of the blockchain doesn't have to worry about how it was made.
 
-- **The Code:** `tx_context.into_results()` in `exec_general_tx.rs:145`.
+- **The Code:** `tx_context.into_results()` in `exec_general_tx.rs:145`.
 
 ---
 
-### Step 8: The Final Seal (**BlockchainUpdate**)
-
-**Purpose:** Making the changes "Law."
+### Step 8: The Final Seal (BlockchainUpdate)
+**Purpose:** Making the changes "Law."
 
 Finally, the updates made to the cache are committed. Whether it was a complex contract or a fast Built-in, the changes are applied to the real blockchain state the same way.
 
-- **The Function:** `blockchain_updates.apply(state)` in `exec_call.rs:41`.
+- **The Function:** `blockchain_updates.apply(state)` in `exec_call.rs:41`.
+
+---
 
 ## 3. SMART CONTRACT DEPLOYMENT FLOW
-In the world of blockchain, a Smart Contract starts its life as a file on a developer's computer. But to make it "live" on the network, it must go through a process called **Deployment**. This isn't just uploading a file; it is the act of creating a new digital identity and running its "setup" instructions for the very first time.
+
+In the world of blockchain, a Smart Contract starts its life as a file on a developer's computer. But to make it "live" on the network, it must go through a process called **Deployment**. This isn't just uploading a file; it is the act of creating a new digital identity and running its "setup" instructions for the very first time.
 
 **Deployment = execution + storage initialization.**
 
@@ -548,151 +397,146 @@ You aren't just saving code to the blockchain; you are running that code once to
 
 **Smart Contract Deployment Flow**
 
-**perform_sc_deploy_update_results()** 
+**perform_sc_deploy_update_results()**
+`framework/scenario/src/scenario/run_vm/sc_deploy.rs:20`
+↓
 
-`framework/scenario/src/scenario/run_vm/sc_deploy.rs:20` ↓
+**perform_sc_deploy_lambda()**
+`sc_deploy.rs:31`
+├─ **tx_input_from_deploy()** [PREPARE DEPLOY INPUT]
+│
+`sc_deploy.rs:58` └─ **execution::commit_deploy()**
+`chain/vm/src/host/execution/exec_create.rs:9`
+↓
 
-**perform_sc_deploy_lambda()** 
+**execute_deploy()** (Deployment Controller)
+`exec_create.rs:47`
+├─ **tx_cache.get_new_address()** [DETERMINISTIC ADDRESS CALC]
+│
+`chain/vm/src/host/context/tx_cache.rs:102` ├─ **TxContext::new()** [CONTEXT PREP]
+│
+`exec_create.rs:60` └─ **create_new_contract()** (Sub‑Step: Account Creation)
+`chain/vm/src/host/context/tx_context.rs:153`
+├─ **Validation Function** (Check Address Collision)
+│
+`tx_context.rs:160` └─ **tx_cache.insert_account()** [STORE CODE & METADATA]
+`tx_context.rs:165` [Writes bytecode path to the new contract's AccountData]
+↓
 
-`sc_deploy.rs:31` ├─ **tx_input_from_deploy()** [PREPARE DEPLOY INPUT] │ 
+**runtime.execute()** (Runtime Controller)
+`chain/vm/src/host/runtime.rs:107`
+├─ **self.executor.new_instance()** [WASM INSTANTIATION]
+│
+`runtime.rs:128` └─ **call_lambda.call()** [RUN INIT FUNCTION]
+`runtime.rs:133` [Execution of the constructor to set initial storage values]
+↓
 
-`sc_deploy.rs:58` └─ **execution::commit_deploy()** 
+**tx_context.into_results()**
+`tx_context.rs:184`
+↓
 
-`chain/vm/src/host/execution/exec_create.rs:9` ↓
+**BlockchainUpdate::apply()** [COMMIT TO MAIN STATE]
+`exec_create.rs:37` [The new account and its initialized storage are persisted]
+↓
 
-**execute_deploy()** (Deployment Controller) 
-
-`exec_create.rs:47` ├─ **tx_cache.get_new_address()** [DETERMINISTIC ADDRESS CALC] │ 
-
-`chain/vm/src/host/context/tx_cache.rs:102` ├─ **TxContext::new()** [CONTEXT PREP] │ 
-
-`exec_create.rs:60` └─ **create_new_contract()** (Sub‑Step: Account Creation) 
-
-`chain/vm/src/host/context/tx_context.rs:153` ├─ **Validation Function** (Check Address Collision) │ 
-
-`tx_context.rs:160` └─ **tx_cache.insert_account()** [STORE CODE & METADATA] 
-
-`tx_context.rs:165` [Writes bytecode path to the new contract's AccountData] ↓
-
-**runtime.execute()** (Runtime Controller) 
-
-`chain/vm/src/host/runtime.rs:107` ├─ **self.executor.new_instance()** [WASM INSTANTIATION] │ 
-
-`runtime.rs:128` └─ **call_lambda.call()** [RUN INIT FUNCTION] 
-
-`runtime.rs:133` [Execution of the constructor to set initial storage values] ↓
-
-**tx_context.into_results()** 
-
-`tx_context.rs:184` ↓
-
-**BlockchainUpdate::apply()** [COMMIT TO MAIN STATE] 
-
-`exec_create.rs:37` [The new account and its initialized storage are persisted] ↓
-
-**Return New Address & TxResult** 
-
+**Return New Address & TxResult**
 `exec_create.rs:43`
 
 ---
-### Step 1: The Blueprint (**Deployment Input**)
 
-**Purpose:** Packaging the code and instructions.
+### Step 1: The Blueprint (Deployment Input)
+**Purpose:** Packaging the code and instructions.
 
-Instead of sending a message to a person, you send a transaction that contains the **WASM bytecode** (the binary blueprint of your contract) and any "starting settings" (arguments) it needs.
+Instead of sending a message to a person, you send a transaction that contains the **WASM bytecode** (the binary blueprint of your contract) and any "starting settings" (arguments) it needs.
 
-- **Behind the scenes:** The SDK creates a `TxInput` where the "To" address is effectively blank (zero), signaling that this transaction is a request to create something new.
-- **The Code:** `tx_input_from_deploy` in `framework/scenario/src/scenario/run_vm/sc_deploy.rs:58`.
+- **Behind the scenes:** The SDK creates a `TxInput` where the "To" address is effectively blank (zero), signaling that this transaction is a request to create something new.
+- **The Code:** `tx_input_from_deploy` in `framework/scenario/src/scenario/run_vm/sc_deploy.rs:58`.
 
 ---
 
-### Step 2: The Router (**exec_create**)
-
-**Purpose:** Handing the request to the "Creation Office."
+### Step 2: The Router (exec_create)
+**Purpose:** Handing the request to the "Creation Office."
 
 The system identifies that this is a deployment request. Instead of the standard router, it goes to a specialized logic for building new accounts.
 
-- **The Function:** `commit_deploy` in `chain/vm/src/host/execution/exec_create.rs:9`.
+- **The Function:** `commit_deploy` in `chain/vm/src/host/execution/exec_create.rs:9`.
 
 ---
 
-### Step 3: Determining the Home (**Check: Builtin OR Contract?**)
-
-**Purpose:** Finding the new contract's address.
+### Step 3: Determining the Home (Check: Builtin OR Contract?)
+**Purpose:** Finding the new contract's address.
 
 The blockchain uses your address and a counter (your "nonce") to mathematically calculate a unique address for the new contract. It's like the blockchain assigning a house number before the building even exists.
 
-- **The Function:** `tx_cache.get_new_address(&tx_input.from)` in `exec_create.rs:58`.
+- **The Function:** `tx_cache.get_new_address(&tx_input.from)` in `exec_create.rs:58`.
 
 ---
 
-### Step 4: The Workspace (**Create TxContext**)
+### Step 4: The Workspace (Create TxContext)
+**Purpose:** Preparing the environment for initialization.
 
-**Purpose:** Preparing the environment for initialization.
+Just like a regular call, we need a `TxContext`. However, this context is special: it’s the first time this specific address has ever been used in the system.
 
-Just like a regular call, we need a `TxContext`. However, this context is special: it’s the first time this specific address has ever been used in the system.
-
-- **The Function:** `TxContext::new(...)` in `exec_create.rs:60`.
+- **The Function:** `TxContext::new(...)` in `exec_create.rs:60`.
 
 ---
 
-### Step 5: Building the Vault (**Create New Account**)
+### Step 5: Building the Vault (Create New Account)
+**Purpose:** Setting up the digital identity.
 
-**Purpose:** Setting up the digital identity.
+The system officially creates a new account in the `TxCache`. It establishes a place for the contract's money, its storage (data), and its code.
 
-The system officially creates a new account in the `TxCache`. It establishes a place for the contract's money, its storage (data), and its code.
-
-- **Behind the scenes:** At this split second, the account is created, and the WASM bytecode (the "blueprint") is saved into the account's record.
+- **Behind the scenes:** At this split second, the account is created, and the WASM bytecode (the "blueprint") is saved into the account's record.
 - **The Code:**
 ```rust
 // tx_context.rs:172
 contract_path: Some(contract_path),
 ```
 
-### Step 6: The Grand Opening (**Runtime.execute**)
+### Step 6: The Grand Opening (Runtime.execute)
+**Purpose:** Running the setup manual (`init`).
 
-**Purpose:** Running the setup manual (`init`).
+Every contract has an `init()` function (the "Constructor"). Now that the account exists, the Virtual Machine runs this function exactly once. It sets up the very first pieces of data—like who the "Owner" is or the starting price of a token.
 
-Every contract has an `init()` function (the "Constructor"). Now that the account exists, the Virtual Machine runs this function exactly once. It sets up the very first pieces of data—like who the "Owner" is or the starting price of a token.
-
-- **The Function:** `runtime.execute(tx_context, f)` in `exec_create.rs:83`.
-
----
-
-### Step 7: Connecting to State (**VM Hooks**)
-
-**Purpose:** Letting the "Setup" code write data.
-
-During the `init()` execution, the code uses **Hooks** to write the initial state to the blockchain. For example, it might save "Owner = Alice" into the contract's permanent storage.
+- **The Function:** `runtime.execute(tx_context, f)` in `exec_create.rs:83`.
 
 ---
 
-### Step 8: Final Review (**TxResult**)
+### Step 7: Connecting to State (VM Hooks)
+**Purpose:** Letting the "Setup" code write data.
 
-**Purpose:** Checking if the "birth" was successful.
-
-If the `init()` function crashes or fails, the whole deployment is cancelled, and the account is never created. If it succeeds, we get a `TxResult` confirming the contract is ready for business.
-
-- **The Code:** `tx_context.into_results()` in `exec_create.rs:85`.
+During the `init()` execution, the code uses **Hooks** to write the initial state to the blockchain. For example, it might save "Owner = Alice" into the contract's permanent storage.
 
 ---
 
-### Step 9: The Final Seal (**BlockchainUpdate**)
+### Step 8: Final Review (TxResult)
+**Purpose:** Checking if the "birth" was successful.
 
-**Purpose:** Making the new contract "Law."
+If the `init()` function crashes or fails, the whole deployment is cancelled, and the account is never created. If it succeeds, we get a `TxResult` confirming the contract is ready for business.
 
-The final step merges the new account, its saved code, and the data created during `init()` into the official blockchain record.
+- **The Code:** `tx_context.into_results()` in `exec_create.rs:85`.
 
-- **The Function:** `blockchain_updates.apply(state)` in `exec_create.rs:37`.
+---
+
+### Step 9: The Final Seal (BlockchainUpdate)
+**Purpose:** Making the new contract "Law."
+
+The final step merges the new account, its saved code, and the data created during `init()` into the official blockchain record.
+
+- **The Function:** `blockchain_updates.apply(state)` in `exec_create.rs:37`.
+
+---
 
 ## 4. SMART CONTRACT QUERY FLOW
+
 **Same execution engine, but no commit.**
 
 This flow ensures that you get a mathematically perfect answer without ever risking a change to the blockchain's official record. It is the only way to "look" at the blockchain without actually "touching" it.
 
-Imagine a blockchain as a locked library. A **Transaction** is like going to the desk and asking the librarian to rewrite a page in a book. A **Query**, on the other hand, is simply walking in and reading a book. You get the information you need, but the library stays exactly as it was when you left.
+Imagine a blockchain as a locked library. A **Transaction** is like going to the desk and asking the librarian to rewrite a page in a book. A **Query**, on the other hand, is simply walking in and reading a book. You get the information you need, but the library stays exactly as it was when you left.
 
 Here is how the blockchain handles a "Read-Only" request.
+
 ### Smart Contract Query Call Stack (Rust VM)
 
 **Smart Contract Query Flow**
@@ -739,73 +583,74 @@ Here is how the blockchain handles a "Read-Only" request.
 └─ **Return TxResult**
    `exec_query.rs:23`  
    │ [Contains only the data returned by the contract, no state changes]
----
-### Step 1: The Request (**Query Input**)
 
-**Purpose:** Asking a question without paying a fee.
+---
+
+### Step 1: The Request (Query Input)
+**Purpose:** Asking a question without paying a fee.
 
 Unlike a transaction, a query doesn't need to be signed by your private key, and it doesn't cost any money. You simply say: "I want to know how many tokens Alice has" or "What is the current price of this item?"
 
-- **Behind the scenes:** The SDK creates a "fake" transaction input. It gives you infinite gas (`u64::MAX`) and sets the cost to zero, so the "reading" can happen without any barriers.
-- **The Code:** `tx_input_from_query` in `framework/scenario/src/scenario/run_vm/sc_query.rs:44`.
+- **Behind the scenes:** The SDK creates a "fake" transaction input. It gives you infinite gas (`u64::MAX`) and sets the cost to zero, so the "reading" can happen without any barriers.
+- **The Code:** `tx_input_from_query` in `framework/scenario/src/scenario/run_vm/sc_query.rs:44`.
 
 ---
 
-### Step 2: The Simulation Router (**execute_query**)
-
-**Purpose:** Setting up the "What If" scenario.
+### Step 2: The Simulation Router (execute_query)
+**Purpose:** Setting up the "What If" scenario.
 
 The request enters the system. Instead of the "Real Transaction" path, it goes through a specialized logic for queries. This path is designed to be a simulation—a "What If" scenario that never becomes "Law."
 
-- **The Function:** `execution::execute_query` in `chain/vm/src/host/execution/exec_query.rs:10`.
+- **The Function:** `execution::execute_query` in `chain/vm/src/host/execution/exec_query.rs:10`.
 
 ---
 
-### Step 3: The Sandbox (**Create TxContext**)
+### Step 3: The Sandbox (Create TxContext)
+**Purpose:** Creating a temporary workspace.
 
-**Purpose:** Creating a temporary workspace.
+We still create a `TxContext`. This is like giving the contract a temporary notebook to do its math. The contract can even _pretend_ to write data to storage while looking for your answer, but it is only writing to a temporary "scratchpad" (the Cache).
 
-We still create a `TxContext`. This is like giving the contract a temporary notebook to do its math. The contract can even _pretend_ to write data to storage while looking for your answer, but it is only writing to a temporary "scratchpad" (the Cache).
-
-- **The Function:** `TxContext::new(...)` in `exec_query.rs:20`.
+- **The Function:** `TxContext::new(...)` in `exec_query.rs:20`.
 
 ---
-### Step 4: The Engine (**Runtime.execute**)
 
-**Purpose:** Starting the exact same motor.
+### Step 4: The Engine (Runtime.execute)
+**Purpose:** Starting the exact same motor.
 
-**This is the magic part:** The blockchain uses the _identical_ Virtual Machine engine for queries as it does for real money transactions. This ensures that the answer you get from a query is 100% mathematically accurate and perfectly matches what would happen in a real transaction.
+**This is the magic part:** The blockchain uses the _identical_ Virtual Machine engine for queries as it does for real money transactions. This ensures that the answer you get from a query is 100% mathematically accurate and perfectly matches what would happen in a real transaction.
 
 - **The Code:**
 ```rust
 // exec_query.rs:21
 let tx_context = runtime.execute(tx_context, f);
 ```
----
-### Step 5: The Read Hooks (**VM Hooks**)
-
-**Purpose:** Looking into the official records.
-
-The contract uses **Hooks** to "look" into the blockchain's official record. It pulls out the specific data you asked for, like a balance or a piece of text.
 
 ---
-### Step 6: The Answer (**TxResult**)
 
-**Purpose:** Extracting the data for the user.
+### Step 5: The Read Hooks (VM Hooks)
+**Purpose:** Looking into the official records.
 
-Once the contract finishes its calculation, it produces a `TxResult`. This contains the "Return Values"—the specific answer to the question you asked at the beginning.
+The contract uses **Hooks** to "look" into the blockchain's official record. It pulls out the specific data you asked for, like a balance or a piece of text.
+
+---
+
+### Step 6: The Answer (TxResult)
+**Purpose:** Extracting the data for the user.
+
+Once the contract finishes its calculation, it produces a `TxResult`. This contains the "Return Values"—the specific answer to the question you asked at the beginning.
 
 - **The Code:**
 ```rust
 // exec_query.rs:22
 let (tx_result, _) = tx_context.into_results();
 ```
+
 ---
-### Step 7: The Discard (**No State Update**)
 
-**Purpose:** Keeping the blockchain unchanged.
+### Step 7: The Discard (No State Update)
+**Purpose:** Keeping the blockchain unchanged.
 
-In a real transaction, we take the "notebook" of changes and merge it into the official records. **In a query, we shred the notebook.** The `_` in the code below represents the changes being completely ignored. Nothing is ever saved to the blockchain.
+In a real transaction, we take the "notebook" of changes and merge it into the official records. **In a query, we shred the notebook.** The `_` in the code below represents the changes being completely ignored. Nothing is ever saved to the blockchain.
 
 - **The logic:**
 ```rust
@@ -813,13 +658,16 @@ In a real transaction, we take the "notebook" of changes and merge it into the o
 let (tx_result, _) = tx_context.into_results();
 return tx_result;
 ```
+
 ---
+
 ## 5. SIMULATION / SCENARIO FLOW
+
 **This is a LOCAL blockchain replica.**
 
-This flow isn't just for "testing"—it is an **Execution Model Simulation**. It allows developers to see exactly how their code will behave in the real world, with 100% accuracy, without ever needing an internet connection or real money.
+This flow isn't just for "testing"—it is an **Execution Model Simulation**. It allows developers to see exactly how their code will behave in the real world, with 100% accuracy, without ever needing an internet connection or real money.
 
-Testing a Smart Contract on a real blockchain can be slow and expensive. To solve this, the SDK creates a **Simulation Universe**. This is a 100% accurate, private replica of the MultiversX blockchain that lives entirely inside your computer’s memory. It’s a "Sandbox" where you can play God—creating accounts and running complex transactions in milliseconds.
+Testing a Smart Contract on a real blockchain can be slow and expensive. To solve this, the SDK creates a **Simulation Universe**. This is a 100% accurate, private replica of the MultiversX blockchain that lives entirely inside your computer’s memory. It’s a "Sandbox" where you can play God—creating accounts and running complex transactions in milliseconds.
 
 ### Simulation / Scenario Call Stack (Rust VM)
 
@@ -875,90 +723,79 @@ Testing a Smart Contract on a real blockchain can be slow and expensive. To solv
 
 ---
 
-### Step 1: The Presence (**ScenarioWorld**)
+### Step 1: The Presence (ScenarioWorld)
+**Purpose:** Becoming the "God" of your universe.
 
-**Purpose:** Becoming the "God" of your universe.
+You start by creating a `ScenarioWorld`. This is your master control center. In this mode, you can create accounts out of thin air, give yourself a billion tokens, and freeze time.
 
-You start by creating a `ScenarioWorld`. This is your master control center. In this mode, you can create accounts out of thin air, give yourself a billion tokens, and freeze time.
-
-- **The Code:** `ScenarioWorld::new()` in `framework/scenario/src/facade/scenario_world.rs:49`.
-
----
-
-### Step 2: The Spreadsheet (**BlockchainMock**)
-
-**Purpose:** Storing the world state in a simple map.
-
-In a real blockchain, data is spread across thousands of hard drives. In the simulator, the entire "State" is stored in a `BlockchainMock`. Think of this as a simple spreadsheet (a `HashMap`) that tracks every address and its current balance.
-
-- **The Code:** `BlockchainState` in `chain/vm/src/blockchain/state/blockchain_state.rs:19`.
+- **The Code:** `ScenarioWorld::new()` in `framework/scenario/src/facade/scenario_world.rs:49`.
 
 ---
 
-### Step 3: The Command (**Transaction Input**)
+### Step 2: The Spreadsheet (BlockchainMock)
+**Purpose:** Storing the world state in a simple map.
 
-**Purpose:** Sending an order to the simulation.
+In a real blockchain, data is spread across thousands of hard drives. In the simulator, the entire "State" is stored in a `BlockchainMock`. Think of this as a simple spreadsheet (a `HashMap`) that tracks every address and its current balance.
 
-You tell the simulation to perform an action (like calling a contract). The SDK packages this into a `TxInput`, just like it would for a real network.
-
----
-
-### Step 4: The Path (**exec_general_tx**)
-
-**Purpose:** Following the standard rules.
-
-Even though this is a simulation, it follows the **exact same rules** as a real blockchain. The request enters the router (`exec_general_tx`) to see if it should take a shortcut (Built-in) or run the full contract logic.
-
-- **The Function:** `execute_builtin_function_or_default` in `exec_general_tx.rs:15`.
+- **The Code:** `BlockchainState` in `chain/vm/src/blockchain/state/blockchain_state.rs:19`.
 
 ---
 
-### Step 5: The Scratchpad (**Create TxContext**)
+### Step 3: The Command (Transaction Input)
+**Purpose:** Sending an order to the simulation.
 
-**Purpose:** Creating a "Save Point."
+You tell the simulation to perform an action (like calling a contract). The SDK packages this into a `TxInput`, just like it would for a real network.
+
+---
+
+### Step 4: The Path (exec_general_tx)
+**Purpose:** Following the standard rules.
+
+Even though this is a simulation, it follows the **exact same rules** as a real blockchain. The request enters the router (`exec_general_tx`) to see if it should take a shortcut (Built-in) or run the full contract logic.
+
+- **The Function:** `execute_builtin_function_or_default` in `exec_general_tx.rs:15`.
+
+---
+
+### Step 5: The Scratchpad (Create TxContext)
+**Purpose:** Creating a "Save Point."
 
 Before the simulation changes the "official" spreadsheet, it creates a scratchpad (`TxCache`). Every change the contract makes is written here first. This is how we can "Rollback" if the execution fails.
 
-- **The Function:** `TxContext::new(...)` in `exec_general_tx.rs:141`.
+- **The Function:** `TxContext::new(...)` in `exec_general_tx.rs:141`.
 
 ---
 
-### Step 6: The Heartbeat (**Runtime.execute**)
+### Step 6: The Heartbeat (Runtime.execute)
+**Purpose:** Running the real blockchain engine.
 
-**Purpose:** Running the real blockchain engine.
+**This is the key:** The simulation uses the _actual_ execution engine that lives on real nodes. It’s not a "fake" or "simplified" version; it is the real contract runner connected to your local spreadsheet instead of a global network.
 
-**This is the key:** The simulation uses the _actual_ execution engine that lives on real nodes. It’s not a "fake" or "simplified" version; it is the real contract runner connected to your local spreadsheet instead of a global network.
-
-- **The Code:** `runtime.execute(tx_context, f)` in `exec_general_tx.rs:143`.
-
----
-
-### Step 7: Reading the Map (**VM Hooks**)
-
-**Purpose:** Looking up data in your private records.
-
-The contract uses **Hooks** to look up data. Because this is a simulation, the Hooks don't look across the internet; they look directly into your `BlockchainMock` spreadsheet.
+- **The Code:** `runtime.execute(tx_context, f)` in `exec_general_tx.rs:143`.
 
 ---
 
-### Step 8: The Conclusion (**TxResult**)
+### Step 7: Reading the Map (VM Hooks)
+**Purpose:** Looking up data in your private records.
 
-**Purpose:** Reporting the success or failure.
-
-The contract finishes and provides a `TxResult`. It tells you exactly what happened, what logs were made, and how much "simulated gas" was used.
+The contract uses **Hooks** to look up data. Because this is a simulation, the Hooks don't look across the internet; they look directly into your `BlockchainMock` spreadsheet.
 
 ---
 
-### Step 9: Commit or Rollback (**BlockchainUpdate**)
+### Step 8: The Conclusion (TxResult)
+**Purpose:** Reporting the success or failure.
 
-**Purpose:** Deciding if the changes become "Real."
+The contract finishes and provides a `TxResult`. It tells you exactly what happened, what logs were made, and how much "simulated gas" was used.
+
+---
+
+### Step 9: Commit or Rollback (BlockchainUpdate)
+**Purpose:** Deciding if the changes become "Real."
 
 This is the final fork in the road for a simulation:
 
-- **Success:** If the transaction worked, the changes from the "scratchpad" are merged into your "official spreadsheet."
-    
-- **Failure:** If it failed, the scratchpad is shredded. It’s as if the transaction never happened—no money was lost, and no records were changed.
-    
+- **Success:** If the transaction worked, the changes from the "scratchpad" are merged into your "official spreadsheet."
+- **Failure:** If it failed, the scratchpad is shredded. It’s as if the transaction never happened—no money was lost, and no records were changed.
 - **The logic:**
 ```rust
 // exec_call.rs:40
@@ -966,13 +803,16 @@ if tx_result.result_status.is_success() {
     blockchain_updates.apply(state);
 }
 ```
+
 ---
+
 ## 6. ASYNC CALL / CALLBACK FLOW
+
 **Execution is NOT always linear.**
 
 It can branch out to other contracts and return with answers. This allows complex applications to work together as a team across the entire blockchain, rather than being limited to just one program at a time.
 
-Most blockchain actions are like a single straight road. But sometimes, a contract needs help from another contract. It needs to "delegate" a task and wait for the answer before it can finish. This is the **Async Call / Callback Flow**. It’s like sending an assistant to the store while you wait at home to start cooking—you can't finish the meal until they return with the groceries.
+Most blockchain actions are like a single straight road. But sometimes, a contract needs help from another contract. It needs to "delegate" a task and wait for the answer before it can finish. This is the **Async Call / Callback Flow**. It’s like sending an assistant to the store while you wait at home to start cooking—you can't finish the meal until they return with the groceries.
 
 ### Async Call / Callback Call Stack (Rust VM)
 
@@ -1027,69 +867,70 @@ Most blockchain actions are like a single straight road. But sometimes, a contra
 `exec_call.rs:78`
 
 ---
-### Step 1: The First Act (**Contract A executes**)
 
-**Purpose:** Starting the original mission.
+### Step 1: The First Act (Contract A executes)
+**Purpose:** Starting the original mission.
 
 Contract A starts its work just like any other contract. It follows its instructions until it hits a line of code that requires another contract's help.
 
-- **The Code:** `commit_call(tx_input, ...)` in `chain/vm/src/host/execution/exec_call.rs:63`.
+- **The Code:** `commit_call(tx_input, ...)` in `chain/vm/src/host/execution/exec_call.rs:63`.
 
 ---
 
-### Step 2: Requesting Help (**Makes async call -> Contract B**)
+### Step 2: Requesting Help (Makes async call -> Contract B)
+**Purpose:** Asking a neighbor for assistance.
 
-**Purpose:** Asking a neighbor for assistance.
+Contract A reaches the point where it needs Contract B. It uses a special command called an `async_call`.
 
-Contract A reaches the point where it needs Contract B. It uses a special command called an `async_call`.
+- **The Function:** `perform_async_call` in `chain/vm/src/host/vm_hooks/vh_tx_context.rs:136`.
 
-- **The Function:** `perform_async_call` in `chain/vm/src/host/vm_hooks/vh_tx_context.rs:136`.
 ---
-### Step 3: The Interruption (**Pending call recorded**)
 
-**Purpose:** Pausing the first mission safely.
+### Step 3: The Interruption (Pending call recorded)
+**Purpose:** Pausing the first mission safely.
 
-**This is the unique part:** Contract A doesn't "stay awake" while waiting. Instead, it stops entirely. The system writes down exactly what Contract A needs from Contract B and saves it as a "Pending Call."
+**This is the unique part:** Contract A doesn't "stay awake" while waiting. Instead, it stops entirely. The system writes down exactly what Contract A needs from Contract B and saves it as a "Pending Call."
 
-- **Behind the scenes:** The system throws an "Early Exit" error, which tells the engine: "Stop Contract A right now, we have a pending task."
+- **Behind the scenes:** The system throws an "Early Exit" error, which tells the engine: "Stop Contract A right now, we have a pending task."
 - **The Code:**
 ```rust
 // vh_tx_context.rs:147
 tx_result.pending_calls.async_call = Some(async_call_data);
 ```
-### Step 4: The Second Act (**Contract B executes**)
 
-**Purpose:** Running the helper's code.
+### Step 4: The Second Act (Contract B executes)
+**Purpose:** Running the helper's code.
 
-Now the blockchain temporarily forgets about Contract A and starts a _brand new_ execution for Contract B. Contract B runs its logic, does its math, and produces its own result.
+Now the blockchain temporarily forgets about Contract A and starts a _brand new_ execution for Contract B. Contract B runs its logic, does its math, and produces its own result.
 
-- **The Function:** `commit_async_call_and_callback` in `exec_call.rs:96`.
+- **The Function:** `commit_async_call_and_callback` in `exec_call.rs:96`.
 
 ---
 
-### Step 5: The Messenger (**Callback scheduled**)
-
-**Purpose:** Preparing the answer for Contract A.
+### Step 5: The Messenger (Callback scheduled)
+**Purpose:** Preparing the answer for Contract A.
 
 Once Contract B is finished, the system takes its result and creates a new "Callback" request. It’s like the assistant returning from the store and heading back to your house.
 
-- **The Function:** `async_callback_tx_input` in `exec_call.rs:111`.
+- **The Function:** `async_callback_tx_input` in `exec_call.rs:111`.
+
 ---
-### Step 6: The Reunion (**Return to Contract A**)
 
-**Purpose:** Giving the answer to the original contract.
+### Step 6: The Reunion (Return to Contract A)
+**Purpose:** Giving the answer to the original contract.
 
-Contract A is "woken up" specifically at its **Callback** function. It receives the results from Contract B (success or failure) and uses that information to finish its original mission.
+Contract A is "woken up" specifically at its **Callback** function. It receives the results from Contract B (success or failure) and uses that information to finish its original mission.
 
 - **The Code:**
 ```rust
 // exec_call.rs:116
 let callback_result = commit_call(callback_input, ...);
 ```
----
-### Step 7: The Master Report (**Final TxResult**)
 
-**Purpose:** Consolidating the whole story.
+---
+
+### Step 7: The Master Report (Final TxResult)
+**Purpose:** Consolidating the whole story.
 
 Because this was a multi-step journey, the system merges all the logs and results from Contract A, Contract B, and the Callback into one single master report.
 
@@ -1098,16 +939,20 @@ Because this was a multi-step journey, the system merges all the logs and result
 // exec_call.rs:75
 tx_result = merge_async_results(tx_result, async_result);
 ```
----
-### Step 8: Applying the Changes (**BlockchainUpdate**)
 
-**Purpose:** Making the entire team's work permanent.
+---
+
+### Step 8: Applying the Changes (BlockchainUpdate)
+**Purpose:** Making the entire team's work permanent.
 
 Finally, the changes from all steps are applied. If any part of the critical chain failed, the system can ensure that no state is changed, keeping the blockchain consistent.
 
-- **The Logic:** `blockchain_updates.apply(state)` in `exec_call.rs:41`.
+- **The Logic:** `blockchain_updates.apply(state)` in `exec_call.rs:41`.
+
+---
 
 # Final Flow
+
 ```mermaid
 graph TD
     subgraph "1. INPUT LAYER (Standardized TX Input)"
@@ -1174,3 +1019,249 @@ graph TD
     style COMMIT fill:#fdb,stroke:#333,stroke-width:2px
     style DISCARD fill:#eee,stroke:#333,stroke-width:2px
 ```
+
+---
+
+## PROOF: VM Hooks Bridge with SIMULATED Blockchain (Not Real)
+
+## Evidence #1: Data Structure is In-Memory HashMap
+
+**File:** `chain/vm/src/blockchain/state/blockchain_state.rs`
+
+```rust
+pub struct BlockchainState {
+    pub accounts: HashMap<Address, AccountData>, // ← IN-MEMORY HASHMAP
+    pub new_addresses: HashMap<(Address, u64), Address>,
+    pub block_config: BlockConfig,
+    pub new_token_identifiers: Vec<String>,
+}
+```
+
+**Proof:** The entire blockchain state is stored in a `HashMap` in RAM. This is NOT a database, NOT a network connection, just a local data structure.
+
+---
+
+## Evidence #2: Account Storage is HashMap
+
+**File:** `chain/vm/src/blockchain/state/account_data.rs`
+
+```rust
+pub type AccountStorage = HashMap<Vec<u8>, Vec<u8>>; // ← KEY-VALUE IN MEMORY
+pub struct AccountData {
+    pub address: Address,
+    pub nonce: u64,
+    pub egld_balance: BigUint,
+    pub esdt: AccountEsdt,
+    pub storage: AccountStorage, // ← THIS IS JUST A HASHMAP
+    pub username: Vec<u8>,
+    pub contract_path: Option<Vec<u8>>,
+    pub code_metadata: VMCodeMetadata,
+    pub contract_owner: Option<Address>,
+    pub developer_rewards: BigUint,
+}
+```
+
+**Proof:** Contract storage is literally `HashMap<Vec<u8>, Vec<u8>>` - a simple in-memory key-value store.
+
+---
+
+## Evidence #3: VM Hooks Read from HashMap
+
+**File:** `chain/vm/src/host/vm_hooks/vh_tx_context.rs`
+
+```rust
+fn storage_read_any_address(&self, address: &Address, key: &[u8]) -> Vec<u8> {
+    self.tx_context_ref.with_account_mut(address, |account| {
+        account.storage.get(key).cloned().unwrap_or_default() // ← READING FROM HASHMAP
+    })
+}
+
+fn storage_write(&mut self, key: &[u8], value: &[u8]) -> Result<(), VMHooksEarlyExit> {
+    self.check_reserved_key(key)?;
+    self.check_not_readonly()?;
+
+    self.tx_context_ref.with_contract_account_mut(|account| {
+        account.storage.insert(key.to_vec(), value.to_vec()); // ← WRITING TO HASHMAP
+    });
+
+    Ok(())
+}
+```
+
+**Proof:** When VM Hooks read/write storage, they directly access `account.storage` HashMap. No network calls, no database queries.
+
+---
+
+## Evidence #4: TxContext Uses Local Cache
+
+**File:** `chain/vm/src/host/context/tx_context.rs`
+
+```rust
+pub struct TxContext {
+    pub runtime_ref: RuntimeRef,
+    pub tx_input_box: Box<TxInput>,
+    pub tx_cache: Arc<TxCache>, // ← LOCAL CACHE, NOT NETWORK
+    pub managed_types: Mutex<ManagedTypeContainer>,
+    pub back_transfers: Mutex<BackTransfers>,
+    pub tx_result_cell: Mutex<TxResult>,
+    pub b_rng: Mutex<BlockchainRng>,
+}
+
+impl TxContext {
+    pub fn blockchain_ref(&self) -> &BlockchainState {
+        self.tx_cache.blockchain_ref() // ← RETURNS LOCAL STATE
+    }
+}
+```
+
+**Proof:** The transaction context holds a reference to `TxCache`, which wraps `BlockchainState` - all local, in-memory.
+
+---
+
+## Evidence #5: TxCache Loads from Local State
+
+**File:** `chain/vm/src/host/context/tx_cache.rs`
+
+```rust
+pub struct TxCache {
+    source_ref: Arc<dyn TxCacheSource>,
+    pub(super) accounts: Mutex<HashMap<Address, AccountData>>, // ← LOCAL HASHMAP
+    pub(super) new_token_identifiers: Mutex<Option<Vec<String>>>,
+}
+
+impl TxCache {
+    pub fn blockchain_ref(&self) -> &BlockchainState {
+        self.source_ref.blockchain_ref() // ← RETURNS LOCAL BLOCKCHAIN STATE
+    }
+
+    fn load_account_if_necessary(&self, address: &Address) {
+        let mut accounts_mut = self.accounts.lock().unwrap();
+        if !accounts_mut.contains_key(address) {
+            if let Some(blockchain_account) = self.source_ref.load_account(address) {
+                accounts_mut.insert(address.clone(), blockchain_account); // ← COPYING FROM LOCAL STATE
+            }
+        }
+    }
+}
+```
+
+**Proof:** Cache loads accounts from `source_ref.load_account()` which reads from local `BlockchainState`, not a network.
+
+---
+
+## Evidence #6: No Network Dependencies
+
+**File:** `chain/vm/Cargo.toml`
+
+```toml
+[dependencies]
+num-bigint = "0.4"
+num-traits = "0.2"
+hex = "0.4"
+sha2 = "0.10"
+sha3 = "0.10"
+itertools = "0.14"
+bitflags = "2.9"
+colored = "3.0"
+rand = { version = "0.10", optional = true }
+rand_seeder = "0.5.0"
+ed25519-dalek = "2.1.0"
+serde = { version = "1.0", features = ["derive"] }
+toml = "1.0"
+anyhow = "1.0"
+log = "0.4"
+```
+
+**Proof:**
+- ❌ NO `reqwest` (HTTP client)
+- ❌ NO `hyper` (HTTP library)
+- ❌ NO `tokio` (async runtime for network)
+- ❌ NO `tonic` (gRPC)
+- ❌ NO network-related dependencies AT ALL
+
+Only cryptography, data structures, and serialization libraries.
+
+---
+
+## Evidence #7: File Search Confirms No Network Code
+
+```bash
+# Searched for network-related terms in chain/vm/
+$ search "http" → No files found
+$ search "network" → No files found
+$ search "api" → No files found
+```
+
+**Proof:** The entire `chain/vm/` directory contains ZERO network-related code.
+
+---
+
+## Evidence #8: BlockchainMock Name Says It All
+
+**File:** `chain/vm/src/blockchain/blockchain_mock.rs`
+
+```rust
+#[derive(Default)]
+pub struct BlockchainMock { // ← LITERALLY CALLED "MOCK"
+    pub vm: VMConfigRef,
+    pub state: BlockchainStateRef,
+}
+```
+
+**Proof:** It's literally named `BlockchainMock` - a mock/simulation, not a real blockchain client.
+
+---
+
+## Evidence #9: Complete Data Flow Trace
+
+Here's the complete path when a contract calls `storage_load("key")`:
+
+1. **Contract (WASM)** → Calls VM Hook function
+2. **VMHooksDispatcher** (`vh_dispatcher.rs`) → Routes to handler
+3. **VMHooksHandler** (`vh_handler.rs`) → Calls context method
+4. **TxVMHooksContext** (`vh_tx_context.rs`) → Implements `storage_read_any_address()`
+```rust
+self.tx_context_ref.with_account_mut(address, |account| {
+    account.storage.get(key).cloned().unwrap_or_default()
+})
+```
+5. **TxContext** (`tx_context.rs`) → Accesses `tx_cache`
+6. **TxCache** (`tx_cache.rs`) → Loads from `accounts: HashMap`
+7. **AccountData** (`account_data.rs`) → Returns from `storage: HashMap<Vec<u8>, Vec<u8>>`
+
+**Every single step is in-memory. No network calls anywhere.**
+
+---
+
+## Evidence #10: README Explicitly States Purpose
+
+**File:** `chain/vm/README.md`
+
+```markdown
+# MultiversX VM implementation in Rust
+
+This crate puts forth a partial implementation of the MultiversX blockchain VM.
+
+It is designed for testing and debugging smart contracts, but it could in
+principle evolve to become part of other tools too.
+```
+
+**Proof:** The README explicitly says it's for "testing and debugging" - not for production blockchain interaction.
+
+---
+
+### Conclusion
+
+**VM Hooks bridge with:**
+- ✅ **BlockchainMock** - Simulated blockchain
+- ✅ **BlockchainState** - In-memory HashMap
+- ✅ **TxCache** - Local transaction cache
+- ✅ **AccountData.storage** - HashMap<Vec<u8>, Vec<u8>>
+
+**VM Hooks DO NOT bridge with:**
+- ❌ Real MultiversX network
+- ❌ Any HTTP/REST API
+- ❌ Any database
+- ❌ Any external service
+
+**This is a local testing environment that simulates blockchain behavior entirely in RAM.**
