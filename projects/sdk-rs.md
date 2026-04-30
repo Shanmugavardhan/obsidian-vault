@@ -1,6 +1,223 @@
 # Rust SDK
 
+### What is 
 
+```plaintext
+chain/
+```
+
+?
+
+The 
+
+```plaintext
+chain/
+```
+
+ directory contains the **core blockchain infrastructure** for MultiversX smart contracts. It has two main parts:
+
+1. **`chain/core/`**
+    
+     - Basic blockchain types and constants
+    
+    - Defines fundamental data structures like 
+        
+        ```plaintext
+        Address
+        ```
+        
+         (32 bytes)
+        
+    - Contains blockchain specifications (code metadata, token types, ESDT roles)
+        
+    - Shared between smart contracts and VM implementations
+        
+2. **`chain/vm/`**
+    
+     - A Rust implementation of the MultiversX Virtual Machine
+    
+    - Used for **testing and debugging** smart contracts locally
+        
+    - Simulates how contracts run on the real blockchain
+        
+    - Not the actual production VM, but a development tool
+        
+
+### What is 
+
+```plaintext
+chain/vm/
+```
+
+?
+
+Think of 
+
+```plaintext
+chain/vm/
+```
+
+ as a **blockchain simulator** that runs on your computer. When you write a smart contract, you need to test it before deploying to the real blockchain. This VM lets you:
+
+- Execute your contract code locally
+    
+- Debug issues without spending real tokens
+    
+- Run tests in a controlled environment
+    
+- Simulate blockchain state (accounts, balances, storage)
+    
+
+**Key components:**
+
+- ```plaintext
+    blockchain/
+    ```
+    
+     - Simulates blockchain state (accounts, balances)
+    
+- ```plaintext
+    host/
+    ```
+    
+     - Manages contract execution environment
+    
+- ```plaintext
+    executor_impl/
+    ```
+    
+     - Executes the actual contract code
+    
+- ```plaintext
+    builtin_functions/
+    ```
+    
+     - Implements blockchain built-in operations
+    
+- ```plaintext
+    crypto_functions/
+    ```
+    
+     - Cryptographic operations (hashing, signatures)
+    
+
+### What are VM Hooks?
+
+**VM Hooks** are the **bridge between your smart contract and the blockchain**.
+
+Think of them as an API that your contract uses to interact with the blockchain:
+
+**When your contract needs to:**
+
+- Get the caller's address → calls 
+    
+    ```plaintext
+    get_caller()
+    ```
+    
+     hook
+    
+- Read from storage → calls 
+    
+    ```plaintext
+    storage_load()
+    ```
+    
+     hook
+    
+- Send tokens → calls 
+    
+    ```plaintext
+    transfer_value()
+    ```
+    
+     hook
+    
+- Get block timestamp → calls 
+    
+    ```plaintext
+    get_block_timestamp()
+    ```
+    
+     hook
+    
+- Write logs → calls 
+    
+    ```plaintext
+    write_event_log()
+    ```
+    
+     hook
+    
+
+**How it works:**
+
+1. Your contract code (compiled to WebAssembly) runs in isolation
+    
+2. When it needs blockchain data, it calls a VM Hook function
+    
+3. The VM Hook handler (
+    
+    ```plaintext
+    VMHooksHandler
+    ```
+    
+    ) processes the request
+    
+4. The dispatcher (
+    
+    ```plaintext
+    VMHooksDispatcher
+    ```
+    
+    ) routes it to the right implementation
+    
+5. The result is returned to your contract
+    
+
+**Example hooks:**
+
+- ```plaintext
+    get_sc_address()
+    ```
+    
+     - Get current contract address
+    
+- ```plaintext
+    get_owner_address()
+    ```
+    
+     - Get contract owner
+    
+- ```plaintext
+    storage_store()
+    ```
+    
+     / 
+    
+    ```plaintext
+    storage_load()
+    ```
+    
+     - Read/write storage
+    
+- ```plaintext
+    managed_caller()
+    ```
+    
+     - Get who called the contract
+    
+- ```plaintext
+    big_int_add()
+    ```
+    
+     - Perform big integer math
+    
+- ```plaintext
+    managed_async_call()
+    ```
+    
+     - Call another contract
 mx-sdk-rs has 6 core execution flows
 ```
 1. General Transaction Execution Flow (SC execution)
