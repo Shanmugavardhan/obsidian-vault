@@ -1,4 +1,6 @@
 # Rust SDK
+
+
 mx-sdk-rs has 6 core execution flows
 ```
 1. General Transaction Execution Flow (SC execution)

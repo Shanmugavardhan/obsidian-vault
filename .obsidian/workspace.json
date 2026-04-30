@@ -27,12 +27,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "projects/Smart Contract Life-cycle.md",
+                "file": "projects/sdk-rs.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Smart Contract Life-cycle"
+              "title": "sdk-rs"
             }
           },
           {
@@ -224,8 +224,8 @@
   },
   "active": "2f764f0914a32d84",
   "lastOpenFiles": [
-    "concepts/transaction.md",
     "projects/Smart Contract Life-cycle.md",
+    "concepts/transaction.md",
     "concepts/nonce.md",
     "concepts/Blockchain.md",
     "projects/sdk-rs.md",
